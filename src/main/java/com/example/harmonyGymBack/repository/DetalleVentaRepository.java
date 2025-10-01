@@ -1,6 +1,6 @@
-package repository;
+package com.example.harmonyGymBack.repository;
 
-import model.DetalleVenta;
+import com.example.harmonyGymBack.model.DetalleVenta;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

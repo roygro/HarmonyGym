@@ -1,4 +1,4 @@
-package model;
+package com.example.harmonyGymBack.model;
 
 
 import jakarta.persistence.*;
