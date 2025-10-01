@@ -1,7 +1,7 @@
-package service;
+package com.example.harmonyGymBack.service;
 
-import model.DetalleVenta;
-import repository.DetalleVentaRepository;
+import com.example.harmonyGymBack.model.DetalleVenta;
+import com.example.harmonyGymBack.repository.DetalleVentaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

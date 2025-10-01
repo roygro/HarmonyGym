@@ -1,7 +1,7 @@
-package service;
+package com.example.harmonyGymBack.service;
 
-import model.Producto;
-import repository.ProductoRepository;
+import com.example.harmonyGymBack.model.Producto;
+import com.example.harmonyGymBack.repository.ProductoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,7 +1,7 @@
-package rest;
+package com.example.harmonyGymBack.rest;
 
-import model.DetalleVenta;
-import service.DetalleVentaService;
+import com.example.harmonyGymBack.model.DetalleVenta;
+import com.example.harmonyGymBack.service.DetalleVentaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

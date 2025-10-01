@@ -1,6 +1,6 @@
-package repository;
+package com.example.harmonyGymBack.repository;
 
-import model.Producto;
+import com.example.harmonyGymBack.model.Producto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
