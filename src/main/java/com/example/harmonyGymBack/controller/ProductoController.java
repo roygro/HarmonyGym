@@ -1,4 +1,4 @@
-package com.example.harmonyGymBack.rest;
+package com.example.harmonyGymBack.controller;
 
 import com.example.harmonyGymBack.model.Producto;
 import com.example.harmonyGymBack.service.ProductoService;
