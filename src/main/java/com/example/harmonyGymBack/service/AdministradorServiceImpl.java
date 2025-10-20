@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class AdministradorService {
+public class AdministradorServiceImpl {
 
     @Autowired
     private AdministradorRepository administradorRepository;

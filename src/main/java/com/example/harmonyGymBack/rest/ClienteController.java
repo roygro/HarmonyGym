@@ -1,7 +1,7 @@
 package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.Cliente;
-import com.example.harmonyGymBack.service.ClienteService;
+import com.example.harmonyGymBack.service.ClienteServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +15,7 @@ import java.util.Optional;
 public class ClienteController {
 
     @Autowired
-    private ClienteService clienteService;
+    private ClienteServiceImpl clienteService;
 
     @GetMapping
     public List<Cliente> getAllClientes() {

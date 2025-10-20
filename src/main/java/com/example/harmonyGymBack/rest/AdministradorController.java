@@ -1,7 +1,7 @@
 package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.Administrador;
-import com.example.harmonyGymBack.service.AdministradorService;
+import com.example.harmonyGymBack.service.AdministradorServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +15,7 @@ import java.util.Optional;
 public class AdministradorController {
 
     @Autowired
-    private AdministradorService administradorService;
+    private AdministradorServiceImpl administradorService;
 
     @GetMapping
     public List<Administrador> getAllAdministradores() {
