@@ -30,7 +30,9 @@ public class Recepcionista {
     private LocalDateTime fechaRegistro;
 
     // Constructores
-    public Recepcionista() {}
+    public Recepcionista() {
+        this.fechaRegistro = LocalDateTime.now();
+    }
 
     public Recepcionista(String idRecepcionista, String nombre, String telefono,
                          String email, LocalDate fechaContratacion) {
@@ -39,6 +41,17 @@ public class Recepcionista {
         this.telefono = telefono;
         this.email = email;
         this.fechaContratacion = fechaContratacion;
+        this.fechaRegistro = LocalDateTime.now();
+    }
+
+    public Recepcionista(String idRecepcionista, String nombre, String telefono,
+                         String email, LocalDate fechaContratacion, String estatus) {
+        this.idRecepcionista = idRecepcionista;
+        this.nombre = nombre;
+        this.telefono = telefono;
+        this.email = email;
+        this.fechaContratacion = fechaContratacion;
+        this.estatus = estatus;
         this.fechaRegistro = LocalDateTime.now();
     }
 
@@ -63,4 +76,17 @@ public class Recepcionista {
 
     public LocalDateTime getFechaRegistro() { return fechaRegistro; }
     public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
+
+    @Override
+    public String toString() {
+        return "Recepcionista{" +
+                "idRecepcionista='" + idRecepcionista + '\'' +
+                ", nombre='" + nombre + '\'' +
+                ", telefono='" + telefono + '\'' +
+                ", email='" + email + '\'' +
+                ", fechaContratacion=" + fechaContratacion +
+                ", estatus='" + estatus + '\'' +
+                ", fechaRegistro=" + fechaRegistro +
+                '}';
+    }
 }

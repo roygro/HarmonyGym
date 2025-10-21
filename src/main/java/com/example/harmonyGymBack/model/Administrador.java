@@ -1,6 +1,5 @@
 package com.example.harmonyGymBack.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -9,19 +8,15 @@ import java.time.LocalDateTime;
 public class Administrador {
     @Id
     @Column(name = "folio_admin")
-    @JsonProperty("folioAdmin")
     private String folioAdmin;
 
-    @Column(name = "nombrecom")
-    @JsonProperty("nombreCom")
+    @Column(name = "nombrecom", nullable = false)
     private String nombreCom;
 
     @Column(name = "app")
-    @JsonProperty("app")
     private String app;
 
     @Column(name = "apm")
-    @JsonProperty("apm")
     private String apm;
 
     @Column(name = "fecha_registro")
@@ -40,6 +35,14 @@ public class Administrador {
         this.fechaRegistro = LocalDateTime.now();
     }
 
+    public Administrador(String folioAdmin, String nombreCom, String app, String apm, LocalDateTime fechaRegistro) {
+        this.folioAdmin = folioAdmin;
+        this.nombreCom = nombreCom;
+        this.app = app;
+        this.apm = apm;
+        this.fechaRegistro = fechaRegistro;
+    }
+
     // Getters y Setters
     public String getFolioAdmin() { return folioAdmin; }
     public void setFolioAdmin(String folioAdmin) { this.folioAdmin = folioAdmin; }
@@ -55,4 +58,15 @@ public class Administrador {
 
     public LocalDateTime getFechaRegistro() { return fechaRegistro; }
     public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
+
+    @Override
+    public String toString() {
+        return "Administrador{" +
+                "folioAdmin='" + folioAdmin + '\'' +
+                ", nombreCom='" + nombreCom + '\'' +
+                ", app='" + app + '\'' +
+                ", apm='" + apm + '\'' +
+                ", fechaRegistro=" + fechaRegistro +
+                '}';
+    }
 }
