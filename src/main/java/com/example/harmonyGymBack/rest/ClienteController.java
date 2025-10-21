@@ -3,11 +3,15 @@ package com.example.harmonyGymBack.rest;
 import com.example.harmonyGymBack.model.Cliente;
 import com.example.harmonyGymBack.service.ClienteServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/clientes")
@@ -17,74 +21,225 @@ public class ClienteController {
     @Autowired
     private ClienteServiceImpl clienteService;
 
-    @GetMapping
-    public List<Cliente> getAllClientes() {
-        return clienteService.getAllClientes();
-    }
+    // ==================== CREAR CLIENTE CON FOTO ====================
 
-    @GetMapping("/{folioCliente}")
-    public ResponseEntity<Cliente> getClienteById(@PathVariable String folioCliente) {
-        Optional<Cliente> cliente = clienteService.getClienteById(folioCliente);
-        return cliente.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-    }
+    @PostMapping(consumes = "multipart/form-data")
+    public ResponseEntity<?> crearClienteConFoto(
+            @RequestParam("nombre") String nombre,
+            @RequestParam(value = "telefono", required = false) String telefono,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "fechaNacimiento", required = false) String fechaNacimiento,
+            @RequestParam(value = "genero", required = false) String genero,
+            @RequestParam(value = "estatus", required = false) String estatus,
+            @RequestParam(value = "foto", required = false) MultipartFile foto) {
 
-    @PostMapping
-    public ResponseEntity<?> createCliente(@RequestBody Cliente cliente) {
         try {
-            Cliente nuevoCliente = clienteService.createCliente(cliente);
-            return ResponseEntity.ok(nuevoCliente);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Cliente cliente = clienteService.crearClienteConFoto(
+                    nombre, telefono, email, fechaNacimiento, genero, estatus, foto);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Cliente creado exitosamente");
+            response.put("cliente", cliente);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al crear cliente: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
 
-    @PutMapping("/{folioCliente}")
-    public ResponseEntity<?> updateCliente(@PathVariable String folioCliente, @RequestBody Cliente clienteDetails) {
+    // ==================== ACTUALIZAR CLIENTE CON FOTO ====================
+
+    @PutMapping(value = "/{folioCliente}", consumes = "multipart/form-data")
+    public ResponseEntity<?> actualizarClienteConFoto(
+            @PathVariable String folioCliente,
+            @RequestParam(value = "nombre", required = false) String nombre,
+            @RequestParam(value = "telefono", required = false) String telefono,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "fechaNacimiento", required = false) String fechaNacimiento,
+            @RequestParam(value = "genero", required = false) String genero,
+            @RequestParam(value = "estatus", required = false) String estatus,
+            @RequestParam(value = "foto", required = false) MultipartFile foto,
+            @RequestParam(value = "eliminarFoto", defaultValue = "false") boolean eliminarFoto) {
+
         try {
-            Cliente clienteActualizado = clienteService.updateCliente(folioCliente, clienteDetails);
-            return ResponseEntity.ok(clienteActualizado);
+            Cliente cliente = clienteService.actualizarClienteConFoto(
+                    folioCliente, nombre, telefono, email, fechaNacimiento, genero,
+                    estatus, foto, eliminarFoto);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Cliente actualizado exitosamente");
+            response.put("cliente", cliente);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al actualizar cliente: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+    // ==================== OBTENER FOTO ====================
+
+    @GetMapping("/{folioCliente}/foto")
+    public ResponseEntity<byte[]> obtenerFotoCliente(@PathVariable String folioCliente) {
+        try {
+            byte[] foto = clienteService.obtenerFotoCliente(folioCliente);
+
+            if (foto == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.ok()
+                    .header("Content-Type", "image/jpeg")
+                    .body(foto);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // ==================== ENDPOINTS EXISTENTES ====================
+
+    @GetMapping
+    public ResponseEntity<List<Cliente>> obtenerTodosLosClientes() {
+        try {
+            List<Cliente> clientes = clienteService.obtenerTodosLosClientes();
+            return ResponseEntity.ok(clientes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{folioCliente}")
+    public ResponseEntity<?> obtenerClientePorId(@PathVariable String folioCliente) {
+        try {
+            Cliente cliente = clienteService.obtenerClientePorId(folioCliente);
+            return ResponseEntity.ok(cliente);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/filtros")
+    public ResponseEntity<List<Cliente>> obtenerClientesFiltrados(
+            @RequestParam(value = "estatus", required = false) String estatus,
+            @RequestParam(value = "genero", required = false) String genero) {
+        try {
+            List<Cliente> clientes = clienteService.obtenerClientesFiltrados(estatus, genero);
+            return ResponseEntity.ok(clientes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PutMapping("/{folioCliente}/estatus")
+    public ResponseEntity<?> cambiarEstatusCliente(
+            @PathVariable String folioCliente,
+            @RequestParam String estatus) {
+        try {
+            Cliente cliente = clienteService.cambiarEstatusCliente(folioCliente, estatus);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Estatus actualizado exitosamente");
+            response.put("cliente", cliente);
+
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @DeleteMapping("/{folioCliente}")
-    public ResponseEntity<?> deleteCliente(@PathVariable String folioCliente) {
+    public ResponseEntity<?> eliminarCliente(@PathVariable String folioCliente) {
         try {
-            clienteService.deleteCliente(folioCliente);
-            return ResponseEntity.ok().body("Cliente eliminado correctamente");
+            clienteService.eliminarCliente(folioCliente);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Cliente desactivado exitosamente");
+
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @PutMapping("/{folioCliente}/baja")
-    public ResponseEntity<?> darDeBajaCliente(@PathVariable String folioCliente) {
+    @GetMapping("/{folioCliente}/estadisticas")
+    public ResponseEntity<?> obtenerEstadisticasCliente(@PathVariable String folioCliente) {
         try {
-            clienteService.darDeBajaCliente(folioCliente);
-            return ResponseEntity.ok().body("Cliente dado de baja correctamente");
+            Map<String, Object> estadisticas = clienteService.obtenerEstadisticasCliente(folioCliente);
+            return ResponseEntity.ok(estadisticas);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @PutMapping("/{folioCliente}/activar")
-    public ResponseEntity<?> activarCliente(@PathVariable String folioCliente) {
+    @GetMapping("/buscar")
+    public ResponseEntity<List<Cliente>> buscarClientesPorNombre(@RequestParam String nombre) {
         try {
-            clienteService.activarCliente(folioCliente);
-            return ResponseEntity.ok().body("Cliente activado correctamente");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            List<Cliente> clientes = clienteService.buscarClientesPorNombre(nombre);
+            return ResponseEntity.ok(clientes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/search")
-    public List<Cliente> searchClientes(@RequestParam String searchTerm) {
-        return clienteService.searchClientes(searchTerm);
+    @GetMapping("/activos")
+    public ResponseEntity<List<Cliente>> obtenerClientesActivos() {
+        try {
+            List<Cliente> clientes = clienteService.obtenerClientesActivos();
+            return ResponseEntity.ok(clientes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    @GetMapping("/estatus/{estatus}")
-    public List<Cliente> getClientesByEstatus(@PathVariable String estatus) {
-        return clienteService.getClientesByEstatus(estatus);
+    @GetMapping("/con-membresia-activa")
+    public ResponseEntity<List<Cliente>> obtenerClientesConMembresiaActiva() {
+        try {
+            List<Cliente> clientes = clienteService.obtenerClientesConMembresiaActiva();
+            return ResponseEntity.ok(clientes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/estadisticas-generales")
+    public ResponseEntity<?> obtenerEstadisticasGenerales() {
+        try {
+            Map<String, Object> estadisticas = clienteService.obtenerEstadisticasGenerales();
+            return ResponseEntity.ok(estadisticas);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

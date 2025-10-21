@@ -32,6 +32,10 @@ public class Cliente {
     @Column(name = "Estatus")
     private String estatus = "Activo";
 
+    // NUEVO CAMPO: Nombre del archivo de foto
+    @Column(name = "Nombre_Archivo_Foto", length = 255)
+    private String nombreArchivoFoto;
+
     // Constructores
     public Cliente() {}
 
@@ -43,6 +47,19 @@ public class Cliente {
         this.email = email;
         this.fechaNacimiento = fechaNacimiento;
         this.genero = genero;
+        this.fechaRegistro = LocalDateTime.now();
+    }
+
+    public Cliente(String folioCliente, String nombre, String telefono, String email,
+                   LocalDate fechaNacimiento, String genero, String estatus, String nombreArchivoFoto) {
+        this.folioCliente = folioCliente;
+        this.nombre = nombre;
+        this.telefono = telefono;
+        this.email = email;
+        this.fechaNacimiento = fechaNacimiento;
+        this.genero = genero;
+        this.estatus = estatus;
+        this.nombreArchivoFoto = nombreArchivoFoto;
         this.fechaRegistro = LocalDateTime.now();
     }
 
@@ -70,4 +87,22 @@ public class Cliente {
 
     public String getEstatus() { return estatus; }
     public void setEstatus(String estatus) { this.estatus = estatus; }
+
+    public String getNombreArchivoFoto() { return nombreArchivoFoto; }
+    public void setNombreArchivoFoto(String nombreArchivoFoto) { this.nombreArchivoFoto = nombreArchivoFoto; }
+
+    @Override
+    public String toString() {
+        return "Cliente{" +
+                "folioCliente='" + folioCliente + '\'' +
+                ", nombre='" + nombre + '\'' +
+                ", telefono='" + telefono + '\'' +
+                ", email='" + email + '\'' +
+                ", fechaNacimiento=" + fechaNacimiento +
+                ", genero='" + genero + '\'' +
+                ", fechaRegistro=" + fechaRegistro +
+                ", estatus='" + estatus + '\'' +
+                ", nombreArchivoFoto='" + nombreArchivoFoto + '\'' +
+                '}';
+    }
 }
