@@ -146,7 +146,9 @@ public class InstructorServiceImpl {
                             ultimoFolio = folio;
                         }
                     } catch (NumberFormatException e) {
+
                         System.err.println("⚠️ Folio con formato inválido: " + folio);
+
                     }
                 }
             }
@@ -244,6 +246,7 @@ public class InstructorServiceImpl {
                                                   String fechaContratacion, String estatus, MultipartFile foto,
                                                   boolean eliminarFoto) throws IOException {
         System.out.println("✏️ Actualizando instructor: " + folioInstructor);
+
 
         Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
 
