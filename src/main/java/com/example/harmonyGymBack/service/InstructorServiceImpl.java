@@ -1,27 +1,19 @@
 package com.example.harmonyGymBack.service;
 
-import com.example.harmonyGymBack.model.Instructor;
+import com.example.harmonyGymBack.model.InstructorEntity;
 import com.example.harmonyGymBack.repository.InstructorRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class InstructorServiceImpl {
@@ -32,100 +24,13 @@ public class InstructorServiceImpl {
     @PersistenceContext
     private EntityManager entityManager;
 
-    // Directorio donde se guardarán las fotos
-    @Value("${app.upload.dir:uploads/instructores}")
-    private String uploadDir;
-
-    // ==================== MÉTODOS PARA MANEJO DE ARCHIVOS ====================
-
-    /**
-     * Guarda un archivo de foto en el sistema de archivos
-     */
-    private String guardarArchivo(MultipartFile archivo, String folioInstructor) throws IOException {
-        if (archivo == null || archivo.isEmpty()) {
-            return null;
-        }
-
-        // Crear directorio si no existe
-        Path uploadPath = Paths.get(uploadDir);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-
-        // Generar nombre único para el archivo
-        String extension = obtenerExtensionArchivo(archivo.getOriginalFilename());
-        String nombreArchivo = folioInstructor + "_" + UUID.randomUUID().toString() + "." + extension;
-
-        // Guardar archivo
-        Path filePath = uploadPath.resolve(nombreArchivo);
-        Files.copy(archivo.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-        return nombreArchivo;
-    }
-
-    /**
-     * Elimina un archivo de foto del sistema de archivos
-     */
-    private void eliminarArchivo(String nombreArchivo) throws IOException {
-        if (nombreArchivo != null && !nombreArchivo.trim().isEmpty()) {
-            Path filePath = Paths.get(uploadDir).resolve(nombreArchivo);
-            if (Files.exists(filePath)) {
-                Files.delete(filePath);
-            }
-        }
-    }
-
-    /**
-     * Obtiene la extensión de un archivo
-     */
-    private String obtenerExtensionArchivo(String nombreArchivo) {
-        if (nombreArchivo == null) {
-            return "jpg";
-        }
-        int lastDotIndex = nombreArchivo.lastIndexOf(".");
-        if (lastDotIndex > 0) {
-            return nombreArchivo.substring(lastDotIndex + 1).toLowerCase();
-        }
-        return "jpg";
-    }
-
-    /**
-     * Valida que el archivo sea una imagen válida
-     */
-    private void validarArchivo(MultipartFile archivo) {
-        if (archivo == null || archivo.isEmpty()) {
-            return; // No hay archivo, es opcional
-        }
-
-        // Validar tipo de archivo
-        String contentType = archivo.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new RuntimeException("El archivo debe ser una imagen válida");
-        }
-
-        // Validar tamaño (máximo 5MB)
-        long maxSize = 5 * 1024 * 1024; // 5MB
-        if (archivo.getSize() > maxSize) {
-            throw new RuntimeException("La imagen no debe superar los 5MB");
-        }
-
-        // Validar extensión
-        String nombreArchivo = archivo.getOriginalFilename();
-        if (nombreArchivo != null) {
-            String extension = obtenerExtensionArchivo(nombreArchivo);
-            if (!extension.matches("(jpg|jpeg|png|gif|webp)")) {
-                throw new RuntimeException("Solo se permiten imágenes JPG, PNG, GIF o WebP");
-            }
-        }
-    }
-
     // ==================== GENERACIÓN AUTOMÁTICA DE FOLIO ====================
 
     private String generarFolioInstructor() {
         try {
             System.out.println("🔍 Buscando último folio en la base de datos...");
 
-            List<Instructor> todosInstructores = instructorRepository.findAll();
+            List<InstructorEntity> todosInstructores = instructorRepository.findAll();
 
             if (todosInstructores.isEmpty()) {
                 System.out.println("✅ No hay instructores, empezando con INS001");
@@ -135,8 +40,8 @@ public class InstructorServiceImpl {
             String ultimoFolio = null;
             int maxNumero = 0;
 
-            for (Instructor instructor : todosInstructores) {
-                String folio = instructor.getFolioInstructor();
+            for (InstructorEntity instructorEntity : todosInstructores) {
+                String folio = instructorEntity.getFolioInstructor();
                 if (folio != null && folio.startsWith("INS")) {
                     try {
                         String numeroStr = folio.substring(3);
@@ -175,141 +80,108 @@ public class InstructorServiceImpl {
         }
     }
 
-    // ==================== CREAR NUEVO INSTRUCTOR CON FOTO ====================
+    // ==================== CREAR NUEVO INSTRUCTOR ====================
 
     @Transactional
-    public Instructor crearInstructorConFoto(String nombre, String app, String apm,
-                                             String horaEntrada, String horaSalida,
-                                             String especialidad, String fechaContratacion,
-                                             String estatus, MultipartFile foto) throws IOException {
-        System.out.println("🚀 Iniciando creación de instructor con foto...");
-
-        // Validar archivo si se proporciona
-        validarArchivo(foto);
+    public InstructorEntity crearInstructor(String nombre, String app, String apm,
+                                            String horaEntrada, String horaSalida,
+                                            String especialidad, String fechaContratacion,
+                                            String estatus) {
+        System.out.println("🚀 Iniciando creación de instructorEntity...");
 
         // Generar folio
         String folioGenerado = generarFolioInstructor();
 
         // Crear objeto Instructor
-        Instructor instructor = new Instructor();
-        instructor.setFolioInstructor(folioGenerado);
-        instructor.setNombre(nombre);
-        instructor.setApp(app);
-        instructor.setApm(apm);
-        instructor.setEspecialidad(especialidad);
-        instructor.setEstatus(estatus != null ? estatus : "Activo");
+        InstructorEntity instructorEntity = new InstructorEntity();
+        instructorEntity.setFolioInstructor(folioGenerado);
+        instructorEntity.setNombre(nombre);
+        instructorEntity.setApp(app);
+        instructorEntity.setApm(apm);
+        instructorEntity.setEspecialidad(especialidad);
+        instructorEntity.setEstatus(estatus != null ? estatus : "Activo");
 
         // Convertir y validar horarios
         if (horaEntrada != null && !horaEntrada.trim().isEmpty()) {
-            instructor.setHoraEntrada(LocalTime.parse(horaEntrada));
+            instructorEntity.setHoraEntrada(LocalTime.parse(horaEntrada));
         }
         if (horaSalida != null && !horaSalida.trim().isEmpty()) {
-            instructor.setHoraSalida(LocalTime.parse(horaSalida));
+            instructorEntity.setHoraSalida(LocalTime.parse(horaSalida));
         }
 
         // Validar horarios
-        if (instructor.getHoraEntrada() != null && instructor.getHoraSalida() != null) {
-            if (instructor.getHoraEntrada().isAfter(instructor.getHoraSalida()) ||
-                    instructor.getHoraEntrada().equals(instructor.getHoraSalida())) {
+        if (instructorEntity.getHoraEntrada() != null && instructorEntity.getHoraSalida() != null) {
+            if (instructorEntity.getHoraEntrada().isAfter(instructorEntity.getHoraSalida()) ||
+                    instructorEntity.getHoraEntrada().equals(instructorEntity.getHoraSalida())) {
                 throw new RuntimeException("La hora de entrada debe ser anterior a la hora de salida");
             }
         }
 
         // Fecha de contratación
         if (fechaContratacion != null && !fechaContratacion.trim().isEmpty()) {
-            instructor.setFechaContratacion(LocalDate.parse(fechaContratacion));
+            instructorEntity.setFechaContratacion(LocalDate.parse(fechaContratacion));
         } else {
-            instructor.setFechaContratacion(LocalDate.now());
+            instructorEntity.setFechaContratacion(LocalDate.now());
         }
 
-        // Guardar foto si se proporciona
-        if (foto != null && !foto.isEmpty()) {
-            String nombreArchivoFoto = guardarArchivo(foto, folioGenerado);
-            instructor.setNombreArchivoFoto(nombreArchivoFoto);
-            System.out.println("📸 Foto guardada: " + nombreArchivoFoto);
-        }
-
-        // Guardar instructor en base de datos
-        Instructor instructorGuardado = instructorRepository.save(instructor);
+        // Guardar instructorEntity en base de datos
+        InstructorEntity instructorEntityGuardado = instructorRepository.save(instructorEntity);
         System.out.println("✅ Instructor creado exitosamente: " + folioGenerado);
 
-        return instructorGuardado;
+        return instructorEntityGuardado;
     }
 
-    // ==================== ACTUALIZAR INSTRUCTOR CON FOTO ====================
+    // ==================== ACTUALIZAR INSTRUCTOR ====================
 
     @Transactional
-    public Instructor actualizarInstructorConFoto(String folioInstructor, String nombre, String app, String apm,
-                                                  String horaEntrada, String horaSalida, String especialidad,
-                                                  String fechaContratacion, String estatus, MultipartFile foto,
-                                                  boolean eliminarFoto) throws IOException {
-        System.out.println("✏️ Actualizando instructor: " + folioInstructor);
+    public InstructorEntity actualizarInstructor(String folioInstructor, String nombre, String app, String apm,
+                                                 String horaEntrada, String horaSalida, String especialidad,
+                                                 String fechaContratacion, String estatus) {
+        System.out.println("✏️ Actualizando instructorEntity: " + folioInstructor);
 
-        Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
-
-        // Validar archivo si se proporciona nueva foto
-        validarArchivo(foto);
+        InstructorEntity instructorEntityExistente = obtenerInstructorPorId(folioInstructor);
 
         // Actualizar campos básicos
-        if (nombre != null) instructorExistente.setNombre(nombre);
-        if (app != null) instructorExistente.setApp(app);
-        if (apm != null) instructorExistente.setApm(apm);
-        if (especialidad != null) instructorExistente.setEspecialidad(especialidad);
-        if (estatus != null) instructorExistente.setEstatus(estatus);
+        if (nombre != null) instructorEntityExistente.setNombre(nombre);
+        if (app != null) instructorEntityExistente.setApp(app);
+        if (apm != null) instructorEntityExistente.setApm(apm);
+        if (especialidad != null) instructorEntityExistente.setEspecialidad(especialidad);
+        if (estatus != null) instructorEntityExistente.setEstatus(estatus);
 
         // Actualizar horarios
         if (horaEntrada != null && !horaEntrada.trim().isEmpty()) {
-            instructorExistente.setHoraEntrada(LocalTime.parse(horaEntrada));
+            instructorEntityExistente.setHoraEntrada(LocalTime.parse(horaEntrada));
         }
         if (horaSalida != null && !horaSalida.trim().isEmpty()) {
-            instructorExistente.setHoraSalida(LocalTime.parse(horaSalida));
+            instructorEntityExistente.setHoraSalida(LocalTime.parse(horaSalida));
         }
 
         // Validar horarios
-        if (instructorExistente.getHoraEntrada() != null && instructorExistente.getHoraSalida() != null) {
-            if (instructorExistente.getHoraEntrada().isAfter(instructorExistente.getHoraSalida()) ||
-                    instructorExistente.getHoraEntrada().equals(instructorExistente.getHoraSalida())) {
+        if (instructorEntityExistente.getHoraEntrada() != null && instructorEntityExistente.getHoraSalida() != null) {
+            if (instructorEntityExistente.getHoraEntrada().isAfter(instructorEntityExistente.getHoraSalida()) ||
+                    instructorEntityExistente.getHoraEntrada().equals(instructorEntityExistente.getHoraSalida())) {
                 throw new RuntimeException("La hora de entrada debe ser anterior a la hora de salida");
             }
         }
 
         // Actualizar fecha de contratación
         if (fechaContratacion != null && !fechaContratacion.trim().isEmpty()) {
-            instructorExistente.setFechaContratacion(LocalDate.parse(fechaContratacion));
+            instructorEntityExistente.setFechaContratacion(LocalDate.parse(fechaContratacion));
         }
 
-        // Manejo de la foto
-        if (eliminarFoto) {
-            // Eliminar foto existente
-            if (instructorExistente.getNombreArchivoFoto() != null) {
-                eliminarArchivo(instructorExistente.getNombreArchivoFoto());
-                instructorExistente.setNombreArchivoFoto(null);
-                System.out.println("🗑️ Foto eliminada");
-            }
-        } else if (foto != null && !foto.isEmpty()) {
-            // Eliminar foto anterior si existe
-            if (instructorExistente.getNombreArchivoFoto() != null) {
-                eliminarArchivo(instructorExistente.getNombreArchivoFoto());
-            }
-            // Guardar nueva foto
-            String nombreArchivoFoto = guardarArchivo(foto, folioInstructor);
-            instructorExistente.setNombreArchivoFoto(nombreArchivoFoto);
-            System.out.println("📸 Foto actualizada: " + nombreArchivoFoto);
-        }
-
-        Instructor instructorActualizado = instructorRepository.save(instructorExistente);
+        InstructorEntity instructorEntityActualizado = instructorRepository.save(instructorEntityExistente);
         System.out.println("✅ Instructor actualizado: " + folioInstructor);
 
-        return instructorActualizado;
+        return instructorEntityActualizado;
     }
 
     // ==================== MÉTODOS ORIGINALES (para compatibilidad) ====================
 
-    public Instructor crearInstructor(Instructor instructor) {
-        System.out.println("🚀 Iniciando creación de instructor...");
+    public InstructorEntity crearInstructor(InstructorEntity instructorEntity) {
+        System.out.println("🚀 Iniciando creación de instructorEntity...");
 
         String folioGenerado = generarFolioInstructor();
-        instructor.setFolioInstructor(folioGenerado);
+        instructorEntity.setFolioInstructor(folioGenerado);
 
         System.out.println("📝 Folio asignado: " + folioGenerado);
 
@@ -318,39 +190,39 @@ public class InstructorServiceImpl {
         }
 
         // Validar horarios
-        if (instructor.getHoraEntrada() != null && instructor.getHoraSalida() != null) {
-            if (instructor.getHoraEntrada().isAfter(instructor.getHoraSalida()) ||
-                    instructor.getHoraEntrada().equals(instructor.getHoraSalida())) {
+        if (instructorEntity.getHoraEntrada() != null && instructorEntity.getHoraSalida() != null) {
+            if (instructorEntity.getHoraEntrada().isAfter(instructorEntity.getHoraSalida()) ||
+                    instructorEntity.getHoraEntrada().equals(instructorEntity.getHoraSalida())) {
                 throw new RuntimeException("La hora de entrada debe ser anterior a la hora de salida");
             }
         }
 
-        if (instructor.getFechaContratacion() == null) {
-            instructor.setFechaContratacion(LocalDate.now());
+        if (instructorEntity.getFechaContratacion() == null) {
+            instructorEntity.setFechaContratacion(LocalDate.now());
         }
 
-        if (instructor.getEstatus() == null) {
-            instructor.setEstatus("Activo");
+        if (instructorEntity.getEstatus() == null) {
+            instructorEntity.setEstatus("Activo");
         }
 
-        Instructor instructorGuardado = instructorRepository.save(instructor);
-        System.out.println("✅ Instructor guardado exitosamente: " + instructorGuardado.getFolioInstructor());
+        InstructorEntity instructorEntityGuardado = instructorRepository.save(instructorEntity);
+        System.out.println("✅ Instructor guardado exitosamente: " + instructorEntityGuardado.getFolioInstructor());
 
-        return instructorGuardado;
+        return instructorEntityGuardado;
     }
 
     // ==================== CONSULTAS Y LISTADOS ====================
 
-    public List<Instructor> obtenerTodosLosInstructores() {
+    public List<InstructorEntity> obtenerTodosLosInstructores() {
         return instructorRepository.findAll();
     }
 
-    public Instructor obtenerInstructorPorId(String folioInstructor) {
-        Optional<Instructor> instructor = instructorRepository.findByFolioInstructor(folioInstructor);
-        return instructor.orElseThrow(() -> new RuntimeException("Instructor no encontrado con folio: " + folioInstructor));
+    public InstructorEntity obtenerInstructorPorId(String folioInstructor) {
+        Optional<InstructorEntity> instructorEntity = instructorRepository.findByFolioInstructor(folioInstructor);
+        return instructorEntity.orElseThrow(() -> new RuntimeException("Instructor no encontrado con folio: " + folioInstructor));
     }
 
-    public List<Instructor> obtenerInstructoresFiltrados(String estatus, String especialidad) {
+    public List<InstructorEntity> obtenerInstructoresFiltrados(String estatus, String especialidad) {
         if (estatus != null && especialidad != null) {
             return instructorRepository.findByEstatusAndEspecialidadContainingIgnoreCase(estatus, especialidad);
         } else if (estatus != null) {
@@ -365,68 +237,65 @@ public class InstructorServiceImpl {
     // ==================== ACTUALIZAR INSTRUCTOR (método original) ====================
 
     @Transactional
-    public Instructor actualizarInstructor(String folioInstructor, Instructor instructorActualizado) {
-        System.out.println("✏️ Actualizando instructor: " + folioInstructor);
+    public InstructorEntity actualizarInstructor(String folioInstructor, InstructorEntity instructorEntityActualizado) {
+        System.out.println("✏️ Actualizando instructorEntity: " + folioInstructor);
 
-        Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
+        InstructorEntity instructorEntityExistente = obtenerInstructorPorId(folioInstructor);
 
         // Validar horarios
-        if (instructorActualizado.getHoraEntrada() != null && instructorActualizado.getHoraSalida() != null) {
-            if (instructorActualizado.getHoraEntrada().isAfter(instructorActualizado.getHoraSalida()) ||
-                    instructorActualizado.getHoraEntrada().equals(instructorActualizado.getHoraSalida())) {
+        if (instructorEntityActualizado.getHoraEntrada() != null && instructorEntityActualizado.getHoraSalida() != null) {
+            if (instructorEntityActualizado.getHoraEntrada().isAfter(instructorEntityActualizado.getHoraSalida()) ||
+                    instructorEntityActualizado.getHoraEntrada().equals(instructorEntityActualizado.getHoraSalida())) {
                 throw new RuntimeException("La hora de entrada debe ser anterior a la hora de salida");
             }
         }
 
         // Actualizar campos (NO actualizar folioInstructor)
-        if (instructorActualizado.getNombre() != null) {
-            instructorExistente.setNombre(instructorActualizado.getNombre());
+        if (instructorEntityActualizado.getNombre() != null) {
+            instructorEntityExistente.setNombre(instructorEntityActualizado.getNombre());
         }
-        if (instructorActualizado.getApp() != null) {
-            instructorExistente.setApp(instructorActualizado.getApp());
+        if (instructorEntityActualizado.getApp() != null) {
+            instructorEntityExistente.setApp(instructorEntityActualizado.getApp());
         }
-        if (instructorActualizado.getApm() != null) {
-            instructorExistente.setApm(instructorActualizado.getApm());
+        if (instructorEntityActualizado.getApm() != null) {
+            instructorEntityExistente.setApm(instructorEntityActualizado.getApm());
         }
-        if (instructorActualizado.getHoraEntrada() != null) {
-            instructorExistente.setHoraEntrada(instructorActualizado.getHoraEntrada());
+        if (instructorEntityActualizado.getHoraEntrada() != null) {
+            instructorEntityExistente.setHoraEntrada(instructorEntityActualizado.getHoraEntrada());
         }
-        if (instructorActualizado.getHoraSalida() != null) {
-            instructorExistente.setHoraSalida(instructorActualizado.getHoraSalida());
+        if (instructorEntityActualizado.getHoraSalida() != null) {
+            instructorEntityExistente.setHoraSalida(instructorEntityActualizado.getHoraSalida());
         }
-        if (instructorActualizado.getEspecialidad() != null) {
-            instructorExistente.setEspecialidad(instructorActualizado.getEspecialidad());
+        if (instructorEntityActualizado.getEspecialidad() != null) {
+            instructorEntityExistente.setEspecialidad(instructorEntityActualizado.getEspecialidad());
         }
-        if (instructorActualizado.getFechaContratacion() != null) {
-            instructorExistente.setFechaContratacion(instructorActualizado.getFechaContratacion());
+        if (instructorEntityActualizado.getFechaContratacion() != null) {
+            instructorEntityExistente.setFechaContratacion(instructorEntityActualizado.getFechaContratacion());
         }
-        if (instructorActualizado.getEstatus() != null) {
-            instructorExistente.setEstatus(instructorActualizado.getEstatus());
-        }
-        if (instructorActualizado.getNombreArchivoFoto() != null) {
-            instructorExistente.setNombreArchivoFoto(instructorActualizado.getNombreArchivoFoto());
+        if (instructorEntityActualizado.getEstatus() != null) {
+            instructorEntityExistente.setEstatus(instructorEntityActualizado.getEstatus());
         }
 
-        Instructor instructorActualizadoDb = instructorRepository.save(instructorExistente);
-        System.out.println("✅ Instructor actualizado: " + instructorActualizadoDb.getFolioInstructor());
+        InstructorEntity instructorEntityActualizadoDb = instructorRepository.save(instructorEntityExistente);
+        System.out.println("✅ Instructor actualizado: " + instructorEntityActualizadoDb.getFolioInstructor());
 
-        return instructorActualizadoDb;
+        return instructorEntityActualizadoDb;
     }
 
     // ==================== GESTIÓN DE ESTATUS ====================
 
     @Transactional
-    public Instructor cambiarEstatusInstructor(String folioInstructor, String nuevoEstatus) {
-        Instructor instructor = obtenerInstructorPorId(folioInstructor);
-        instructor.setEstatus(nuevoEstatus);
-        return instructorRepository.save(instructor);
+    public InstructorEntity cambiarEstatusInstructor(String folioInstructor, String nuevoEstatus) {
+        InstructorEntity instructorEntity = obtenerInstructorPorId(folioInstructor);
+        instructorEntity.setEstatus(nuevoEstatus);
+        return instructorRepository.save(instructorEntity);
     }
 
-    public Instructor desactivarInstructor(String folioInstructor) {
+    public InstructorEntity desactivarInstructor(String folioInstructor) {
         return cambiarEstatusInstructor(folioInstructor, "Inactivo");
     }
 
-    public Instructor activarInstructor(String folioInstructor) {
+    public InstructorEntity activarInstructor(String folioInstructor) {
         return cambiarEstatusInstructor(folioInstructor, "Activo");
     }
 
@@ -437,7 +306,7 @@ public class InstructorServiceImpl {
     // ==================== ESTADÍSTICAS ====================
 
     public Map<String, Object> obtenerEstadisticasInstructor(String folioInstructor) {
-        // Verificar que el instructor existe
+        // Verificar que el instructorEntity existe
         if (!instructorRepository.existsByFolioInstructor(folioInstructor)) {
             throw new RuntimeException("Instructor no encontrado con folio: " + folioInstructor);
         }
@@ -494,11 +363,11 @@ public class InstructorServiceImpl {
         return instructorRepository.existsByFolioInstructor(folioInstructor);
     }
 
-    public List<Instructor> obtenerInstructoresActivos() {
+    public List<InstructorEntity> obtenerInstructoresActivos() {
         return instructorRepository.findByEstatusOrderByNombreAsc("Activo");
     }
 
-    public List<Instructor> buscarInstructoresPorNombre(String nombre) {
+    public List<InstructorEntity> buscarInstructoresPorNombre(String nombre) {
         return instructorRepository.findByNombreContainingIgnoreCase(nombre);
     }
 
@@ -506,40 +375,18 @@ public class InstructorServiceImpl {
         return instructorRepository.findByEstatus("Activo").stream().count();
     }
 
-    public List<Instructor> obtenerInstructoresPorEspecialidad(String especialidad) {
+    public List<InstructorEntity> obtenerInstructoresPorEspecialidad(String especialidad) {
         return instructorRepository.findByEspecialidadContainingIgnoreCase(especialidad);
     }
 
-    // ==================== ELIMINAR INSTRUCTOR (con foto) ====================
+    // ==================== ELIMINAR INSTRUCTOR ====================
 
     @Transactional
-    public void eliminarInstructorCompleto(String folioInstructor) throws IOException {
-        Instructor instructor = obtenerInstructorPorId(folioInstructor);
-
-        // Eliminar foto si existe
-        if (instructor.getNombreArchivoFoto() != null) {
-            eliminarArchivo(instructor.getNombreArchivoFoto());
-        }
+    public void eliminarInstructorCompleto(String folioInstructor) {
+        InstructorEntity instructorEntity = obtenerInstructorPorId(folioInstructor);
 
         // Eliminar de la base de datos
-        instructorRepository.delete(instructor);
+        instructorRepository.delete(instructorEntity);
         System.out.println("✅ Instructor eliminado completamente: " + folioInstructor);
-    }
-
-    // ==================== OBTENER FOTO ====================
-
-    public byte[] obtenerFotoInstructor(String folioInstructor) throws IOException {
-        Instructor instructor = obtenerInstructorPorId(folioInstructor);
-
-        if (instructor.getNombreArchivoFoto() == null) {
-            return null;
-        }
-
-        Path filePath = Paths.get(uploadDir).resolve(instructor.getNombreArchivoFoto());
-        if (!Files.exists(filePath)) {
-            return null;
-        }
-
-        return Files.readAllBytes(filePath);
     }
 }

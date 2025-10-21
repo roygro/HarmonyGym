@@ -6,7 +6,7 @@ import java.time.LocalTime;
 
 @Entity
 @Table(name = "INSTRUCTOR")
-public class Instructor {
+public class InstructorEntity {
 
     @Id
     @Column(name = "Folio_Instructor", length = 50)
@@ -36,16 +36,13 @@ public class Instructor {
     @Column(name = "Estatus", length = 10)
     private String estatus = "Activo";
 
-    // NUEVO CAMPO: Nombre del archivo de foto
-    @Column(name = "Nombre_Archivo_Foto", length = 255)
-    private String nombreArchivoFoto;
 
     // Constructores
-    public Instructor() {}
+    public InstructorEntity() {}
 
-    public Instructor(String folioInstructor, String nombre, String app, String apm,
-                      LocalTime horaEntrada, LocalTime horaSalida, String especialidad,
-                      LocalDate fechaContratacion, String estatus) {
+    public InstructorEntity(String folioInstructor, String nombre, String app, String apm,
+                            LocalTime horaEntrada, LocalTime horaSalida, String especialidad,
+                            LocalDate fechaContratacion, String estatus) {
         this.folioInstructor = folioInstructor;
         this.nombre = nombre;
         this.app = app;
@@ -57,20 +54,7 @@ public class Instructor {
         this.estatus = estatus;
     }
 
-    public Instructor(String folioInstructor, String nombre, String app, String apm,
-                      LocalTime horaEntrada, LocalTime horaSalida, String especialidad,
-                      LocalDate fechaContratacion, String estatus, String nombreArchivoFoto) {
-        this.folioInstructor = folioInstructor;
-        this.nombre = nombre;
-        this.app = app;
-        this.apm = apm;
-        this.horaEntrada = horaEntrada;
-        this.horaSalida = horaSalida;
-        this.especialidad = especialidad;
-        this.fechaContratacion = fechaContratacion;
-        this.estatus = estatus;
-        this.nombreArchivoFoto = nombreArchivoFoto;
-    }
+
 
     // Getters y Setters
     public String getFolioInstructor() {
@@ -145,13 +129,8 @@ public class Instructor {
         this.estatus = estatus;
     }
 
-    public String getNombreArchivoFoto() {
-        return nombreArchivoFoto;
-    }
 
-    public void setNombreArchivoFoto(String nombreArchivoFoto) {
-        this.nombreArchivoFoto = nombreArchivoFoto;
-    }
+
 
     @Override
     public String toString() {
@@ -164,8 +143,8 @@ public class Instructor {
                 ", horaSalida=" + horaSalida +
                 ", especialidad='" + especialidad + '\'' +
                 ", fechaContratacion=" + fechaContratacion +
-                ", estatus='" + estatus + '\'' +
-                ", nombreArchivoFoto='" + nombreArchivoFoto + '\'' +
+                ", estatus='" + estatus + '\''+
+
                 '}';
     }
 }

@@ -1,6 +1,6 @@
 package com.example.harmonyGymBack.rest;
 
-import com.example.harmonyGymBack.model.Actividad;
+import com.example.harmonyGymBack.model.ActividadEntity;
 import com.example.harmonyGymBack.service.ActividadServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,10 +22,10 @@ public class ActividadController {
 
     // GUARDAR - Crear nueva actividad
     @PostMapping("/guardar")
-    public ResponseEntity<?> guardarActividad(@RequestBody Actividad actividad) {
+    public ResponseEntity<?> guardarActividad(@RequestBody ActividadEntity actividadEntity) {
         try {
-            Actividad nuevaActividad = actividadService.crearActividad(actividad);
-            return new ResponseEntity<>(nuevaActividad, HttpStatus.CREATED);
+            ActividadEntity nuevaActividadEntity = actividadService.crearActividad(actividadEntity);
+            return new ResponseEntity<>(nuevaActividadEntity, HttpStatus.CREATED);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -35,9 +35,9 @@ public class ActividadController {
 
     // LISTAR - Obtener todas las actividades
     @GetMapping("/listar")
-    public ResponseEntity<List<Actividad>> listarActividades() {
+    public ResponseEntity<List<ActividadEntity>> listarActividades() {
         try {
-            List<Actividad> actividades = actividadService.obtenerTodasActividades();
+            List<ActividadEntity> actividades = actividadService.obtenerTodasActividades();
             return new ResponseEntity<>(actividades, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -46,11 +46,11 @@ public class ActividadController {
 
     // LISTAR FILTRADAS - Obtener actividades con filtros
     @GetMapping("/listar-filtradas")
-    public ResponseEntity<List<Actividad>> listarActividadesFiltradas(
+    public ResponseEntity<List<ActividadEntity>> listarActividadesFiltradas(
             @RequestParam(required = false) String estatus,
             @RequestParam(required = false) String lugar) {
         try {
-            List<Actividad> actividades = actividadService.obtenerActividadesFiltradas(estatus, lugar);
+            List<ActividadEntity> actividades = actividadService.obtenerActividadesFiltradas(estatus, lugar);
             return new ResponseEntity<>(actividades, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -59,9 +59,9 @@ public class ActividadController {
 
     // LISTAR ACTIVAS - Obtener actividades activas
     @GetMapping("/listar-activas")
-    public ResponseEntity<List<Actividad>> listarActividadesActivas() {
+    public ResponseEntity<List<ActividadEntity>> listarActividadesActivas() {
         try {
-            List<Actividad> actividades = actividadService.obtenerActividadesActivas();
+            List<ActividadEntity> actividades = actividadService.obtenerActividadesActivas();
             return new ResponseEntity<>(actividades, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -70,9 +70,9 @@ public class ActividadController {
 
     // LISTAR FUTURAS - Obtener actividades futuras
     @GetMapping("/listar-futuras")
-    public ResponseEntity<List<Actividad>> listarActividadesFuturas() {
+    public ResponseEntity<List<ActividadEntity>> listarActividadesFuturas() {
         try {
-            List<Actividad> actividades = actividadService.obtenerActividadesFuturas();
+            List<ActividadEntity> actividades = actividadService.obtenerActividadesFuturas();
             return new ResponseEntity<>(actividades, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -83,8 +83,8 @@ public class ActividadController {
     @GetMapping("/buscar/{id}")
     public ResponseEntity<?> buscarActividadPorId(@PathVariable String id) {
         try {
-            Actividad actividad = actividadService.obtenerActividadPorId(id);
-            return new ResponseEntity<>(actividad, HttpStatus.OK);
+            ActividadEntity actividadEntity = actividadService.obtenerActividadPorId(id);
+            return new ResponseEntity<>(actividadEntity, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
@@ -94,10 +94,10 @@ public class ActividadController {
 
     // EDITAR - Actualizar actividad
     @PutMapping("/editar/{id}")
-    public ResponseEntity<?> editarActividad(@PathVariable String id, @RequestBody Actividad actividad) {
+    public ResponseEntity<?> editarActividad(@PathVariable String id, @RequestBody ActividadEntity actividadEntity) {
         try {
-            Actividad actividadActualizada = actividadService.actualizarActividad(id, actividad);
-            return new ResponseEntity<>(actividadActualizada, HttpStatus.OK);
+            ActividadEntity actividadEntityActualizada = actividadService.actualizarActividad(id, actividadEntity);
+            return new ResponseEntity<>(actividadEntityActualizada, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
@@ -111,10 +111,10 @@ public class ActividadController {
             @PathVariable String id,
             @RequestParam String estatus) {
         try {
-            Actividad actividad = actividadService.cambiarEstatusActividad(id, estatus);
+            ActividadEntity actividadEntity = actividadService.cambiarEstatusActividad(id, estatus);
             return new ResponseEntity<>(Map.of(
                     "message", "Estatus de actividad actualizado exitosamente",
-                    "data", actividad
+                    "data", actividadEntity
             ), HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -127,10 +127,10 @@ public class ActividadController {
     @PutMapping("/activar/{id}")
     public ResponseEntity<?> activarActividad(@PathVariable String id) {
         try {
-            Actividad actividad = actividadService.activarActividad(id);
+            ActividadEntity actividadEntity = actividadService.activarActividad(id);
             return new ResponseEntity<>(Map.of(
                     "message", "Actividad activada exitosamente",
-                    "data", actividad
+                    "data", actividadEntity
             ), HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -143,10 +143,10 @@ public class ActividadController {
     @PutMapping("/desactivar/{id}")
     public ResponseEntity<?> desactivarActividad(@PathVariable String id) {
         try {
-            Actividad actividad = actividadService.desactivarActividad(id);
+            ActividadEntity actividadEntity = actividadService.desactivarActividad(id);
             return new ResponseEntity<>(Map.of(
                     "message", "Actividad desactivada exitosamente",
-                    "data", actividad
+                    "data", actividadEntity
             ), HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -170,9 +170,9 @@ public class ActividadController {
 
     // BUSCAR POR NOMBRE - Buscar actividades por nombre
     @GetMapping("/buscar-por-nombre")
-    public ResponseEntity<List<Actividad>> buscarActividadesPorNombre(@RequestParam String nombre) {
+    public ResponseEntity<List<ActividadEntity>> buscarActividadesPorNombre(@RequestParam String nombre) {
         try {
-            List<Actividad> actividades = actividadService.buscarActividadesPorNombre(nombre);
+            List<ActividadEntity> actividades = actividadService.buscarActividadesPorNombre(nombre);
             return new ResponseEntity<>(actividades, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -181,9 +181,9 @@ public class ActividadController {
 
     // BUSCAR POR INSTRUCTOR - Obtener actividades por instructor
     @GetMapping("/buscar-por-instructor/{folioInstructor}")
-    public ResponseEntity<List<Actividad>> buscarActividadesPorInstructor(@PathVariable String folioInstructor) {
+    public ResponseEntity<List<ActividadEntity>> buscarActividadesPorInstructor(@PathVariable String folioInstructor) {
         try {
-            List<Actividad> actividades = actividadService.obtenerActividadesPorInstructor(folioInstructor);
+            List<ActividadEntity> actividades = actividadService.obtenerActividadesPorInstructor(folioInstructor);
             return new ResponseEntity<>(actividades, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -192,10 +192,10 @@ public class ActividadController {
 
     // BUSCAR POR FECHA - Obtener actividades por fecha
     @GetMapping("/buscar-por-fecha")
-    public ResponseEntity<List<Actividad>> buscarActividadesPorFecha(@RequestParam String fecha) {
+    public ResponseEntity<List<ActividadEntity>> buscarActividadesPorFecha(@RequestParam String fecha) {
         try {
             LocalDate fechaActividad = LocalDate.parse(fecha);
-            List<Actividad> actividades = actividadService.obtenerActividadesPorFecha(fechaActividad);
+            List<ActividadEntity> actividades = actividadService.obtenerActividadesPorFecha(fechaActividad);
             return new ResponseEntity<>(actividades, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -204,9 +204,9 @@ public class ActividadController {
 
     // BUSCAR POR LUGAR - Obtener actividades por lugar
     @GetMapping("/buscar-por-lugar")
-    public ResponseEntity<List<Actividad>> buscarActividadesPorLugar(@RequestParam String lugar) {
+    public ResponseEntity<List<ActividadEntity>> buscarActividadesPorLugar(@RequestParam String lugar) {
         try {
-            List<Actividad> actividades = actividadService.obtenerActividadesPorLugar(lugar);
+            List<ActividadEntity> actividades = actividadService.obtenerActividadesPorLugar(lugar);
             return new ResponseEntity<>(actividades, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);

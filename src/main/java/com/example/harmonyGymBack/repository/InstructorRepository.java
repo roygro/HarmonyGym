@@ -1,6 +1,6 @@
 package com.example.harmonyGymBack.repository;
 
-import com.example.harmonyGymBack.model.Instructor;
+import com.example.harmonyGymBack.model.InstructorEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,30 +10,30 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface InstructorRepository extends JpaRepository<Instructor, String> {
+public interface InstructorRepository extends JpaRepository<InstructorEntity, String> {
 
     // Buscar instructores por estatus
-    List<Instructor> findByEstatus(String estatus);
+    List<InstructorEntity> findByEstatus(String estatus);
 
     // Buscar instructores por especialidad (case insensitive)
-    List<Instructor> findByEspecialidadContainingIgnoreCase(String especialidad);
+    List<InstructorEntity> findByEspecialidadContainingIgnoreCase(String especialidad);
 
     // Buscar instructores activos ordenados por nombre
-    List<Instructor> findByEstatusOrderByNombreAsc(String estatus);
+    List<InstructorEntity> findByEstatusOrderByNombreAsc(String estatus);
 
     // Buscar por estatus y especialidad
-    List<Instructor> findByEstatusAndEspecialidadContainingIgnoreCase(String estatus, String especialidad);
+    List<InstructorEntity> findByEstatusAndEspecialidadContainingIgnoreCase(String estatus, String especialidad);
 
-    // Verificar si existe un instructor por folio
+    // Verificar si existe un instructorEntity por folio
     boolean existsByFolioInstructor(String folioInstructor);
 
     // Buscar por nombre (case insensitive)
-    List<Instructor> findByNombreContainingIgnoreCase(String nombre);
+    List<InstructorEntity> findByNombreContainingIgnoreCase(String nombre);
 
     // Buscar por folio
-    Optional<Instructor> findByFolioInstructor(String folioInstructor);
+    Optional<InstructorEntity> findByFolioInstructor(String folioInstructor);
 
-    // Obtener instructor con información extendida del usuario
+    // Obtener instructorEntity con información extendida del usuario
     @Query(value = """
         SELECT i.*, u.Username, u.Estatus as usuario_estatus
         FROM INSTRUCTOR i
@@ -42,7 +42,7 @@ public interface InstructorRepository extends JpaRepository<Instructor, String> 
         """, nativeQuery = true)
     Optional<Object[]> findInstructorWithUsuario(@Param("folioInstructor") String folioInstructor);
 
-    @Query(value = "SELECT i.folio_instructor FROM instructor i ORDER BY i.folio_instructor DESC LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT i.folio_instructor FROM instructorEntity i ORDER BY i.folio_instructor DESC LIMIT 1", nativeQuery = true)
     String findUltimoFolioInstructor();
 
     // Obtener todos los instructores con información de usuario

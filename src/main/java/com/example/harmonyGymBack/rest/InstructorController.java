@@ -1,14 +1,12 @@
 package com.example.harmonyGymBack.rest;
 
-import com.example.harmonyGymBack.model.Instructor;
+import com.example.harmonyGymBack.model.InstructorEntity;
 import com.example.harmonyGymBack.service.InstructorServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,10 +19,10 @@ public class InstructorController {
     @Autowired
     private InstructorServiceImpl instructorService;
 
-    // ==================== CREAR INSTRUCTOR CON FOTO ====================
+    // ==================== CREAR INSTRUCTOR ====================
 
-    @PostMapping(consumes = "multipart/form-data")
-    public ResponseEntity<?> crearInstructorConFoto(
+    @PostMapping
+    public ResponseEntity<?> crearInstructor(
             @RequestParam("nombre") String nombre,
             @RequestParam(value = "app", required = false) String app,
             @RequestParam(value = "apm", required = false) String apm,
@@ -32,18 +30,17 @@ public class InstructorController {
             @RequestParam(value = "horaSalida", required = false) String horaSalida,
             @RequestParam(value = "especialidad", required = false) String especialidad,
             @RequestParam(value = "fechaContratacion", required = false) String fechaContratacion,
-            @RequestParam(value = "estatus", required = false) String estatus,
-            @RequestParam(value = "foto", required = false) MultipartFile foto) {
+            @RequestParam(value = "estatus", required = false) String estatus) {
 
         try {
-            Instructor instructor = instructorService.crearInstructorConFoto(
+            InstructorEntity instructorEntity = instructorService.crearInstructor(
                     nombre, app, apm, horaEntrada, horaSalida, especialidad,
-                    fechaContratacion, estatus, foto);
+                    fechaContratacion, estatus);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Instructor creado exitosamente");
-            response.put("instructor", instructor);
+            response.put("instructor", instructorEntity);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
@@ -55,10 +52,10 @@ public class InstructorController {
         }
     }
 
-    // ==================== ACTUALIZAR INSTRUCTOR CON FOTO ====================
+    // ==================== ACTUALIZAR INSTRUCTOR ====================
 
-    @PutMapping(value = "/{folioInstructor}", consumes = "multipart/form-data")
-    public ResponseEntity<?> actualizarInstructorConFoto(
+    @PutMapping("/{folioInstructor}")
+    public ResponseEntity<?> actualizarInstructor(
             @PathVariable String folioInstructor,
             @RequestParam(value = "nombre", required = false) String nombre,
             @RequestParam(value = "app", required = false) String app,
@@ -67,19 +64,17 @@ public class InstructorController {
             @RequestParam(value = "horaSalida", required = false) String horaSalida,
             @RequestParam(value = "especialidad", required = false) String especialidad,
             @RequestParam(value = "fechaContratacion", required = false) String fechaContratacion,
-            @RequestParam(value = "estatus", required = false) String estatus,
-            @RequestParam(value = "foto", required = false) MultipartFile foto,
-            @RequestParam(value = "eliminarFoto", defaultValue = "false") boolean eliminarFoto) {
+            @RequestParam(value = "estatus", required = false) String estatus) {
 
         try {
-            Instructor instructor = instructorService.actualizarInstructorConFoto(
+            InstructorEntity instructorEntity = instructorService.actualizarInstructor(
                     folioInstructor, nombre, app, apm, horaEntrada, horaSalida,
-                    especialidad, fechaContratacion, estatus, foto, eliminarFoto);
+                    especialidad, fechaContratacion, estatus);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Instructor actualizado exitosamente");
-            response.put("instructor", instructor);
+            response.put("instructor", instructorEntity);
 
             return ResponseEntity.ok(response);
 
@@ -91,33 +86,57 @@ public class InstructorController {
         }
     }
 
+    // ==================== CREAR INSTRUCTOR CON OBJETO (para compatibilidad) ====================
 
-    // ==================== OBTENER FOTO ====================
-
-    @GetMapping("/{folioInstructor}/foto")
-    public ResponseEntity<byte[]> obtenerFotoInstructor(@PathVariable String folioInstructor) {
+    @PostMapping("/crear")
+    public ResponseEntity<?> crearInstructor(@RequestBody InstructorEntity instructorEntity) {
         try {
-            byte[] foto = instructorService.obtenerFotoInstructor(folioInstructor);
+            InstructorEntity instructorEntityCreado = instructorService.crearInstructor(instructorEntity);
 
-            if (foto == null) {
-                return ResponseEntity.notFound().build();
-            }
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Instructor creado exitosamente");
+            response.put("instructor", instructorEntityCreado);
 
-            return ResponseEntity.ok()
-                    .header("Content-Type", "image/jpeg")
-                    .body(foto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al crear instructor: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+    // ==================== ACTUALIZAR INSTRUCTOR CON OBJETO (para compatibilidad) ====================
+
+    @PutMapping("/actualizar/{folioInstructor}")
+    public ResponseEntity<?> actualizarInstructor(@PathVariable String folioInstructor,
+                                                  @RequestBody InstructorEntity instructorEntity) {
+        try {
+            InstructorEntity instructorEntityActualizado = instructorService.actualizarInstructor(folioInstructor, instructorEntity);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Instructor actualizado exitosamente");
+            response.put("instructor", instructorEntityActualizado);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al actualizar instructor: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
 
     // ==================== ENDPOINTS EXISTENTES ====================
 
     @GetMapping
-    public ResponseEntity<List<Instructor>> obtenerTodosLosInstructores() {
+    public ResponseEntity<List<InstructorEntity>> obtenerTodosLosInstructores() {
         try {
-            List<Instructor> instructores = instructorService.obtenerTodosLosInstructores();
+            List<InstructorEntity> instructores = instructorService.obtenerTodosLosInstructores();
             return ResponseEntity.ok(instructores);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -127,8 +146,8 @@ public class InstructorController {
     @GetMapping("/{folioInstructor}")
     public ResponseEntity<?> obtenerInstructorPorId(@PathVariable String folioInstructor) {
         try {
-            Instructor instructor = instructorService.obtenerInstructorPorId(folioInstructor);
-            return ResponseEntity.ok(instructor);
+            InstructorEntity instructorEntity = instructorService.obtenerInstructorPorId(folioInstructor);
+            return ResponseEntity.ok(instructorEntity);
         } catch (RuntimeException e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
@@ -140,11 +159,11 @@ public class InstructorController {
     }
 
     @GetMapping("/filtros")
-    public ResponseEntity<List<Instructor>> obtenerInstructoresFiltrados(
+    public ResponseEntity<List<InstructorEntity>> obtenerInstructoresFiltrados(
             @RequestParam(value = "estatus", required = false) String estatus,
             @RequestParam(value = "especialidad", required = false) String especialidad) {
         try {
-            List<Instructor> instructores = instructorService.obtenerInstructoresFiltrados(estatus, especialidad);
+            List<InstructorEntity> instructores = instructorService.obtenerInstructoresFiltrados(estatus, especialidad);
             return ResponseEntity.ok(instructores);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -156,12 +175,12 @@ public class InstructorController {
             @PathVariable String folioInstructor,
             @RequestParam String estatus) {
         try {
-            Instructor instructor = instructorService.cambiarEstatusInstructor(folioInstructor, estatus);
+            InstructorEntity instructorEntity = instructorService.cambiarEstatusInstructor(folioInstructor, estatus);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Estatus actualizado exitosamente");
-            response.put("instructor", instructor);
+            response.put("instructor", instructorEntity);
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -210,9 +229,9 @@ public class InstructorController {
     }
 
     @GetMapping("/buscar")
-    public ResponseEntity<List<Instructor>> buscarInstructoresPorNombre(@RequestParam String nombre) {
+    public ResponseEntity<List<InstructorEntity>> buscarInstructoresPorNombre(@RequestParam String nombre) {
         try {
-            List<Instructor> instructores = instructorService.buscarInstructoresPorNombre(nombre);
+            List<InstructorEntity> instructores = instructorService.buscarInstructoresPorNombre(nombre);
             return ResponseEntity.ok(instructores);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -220,10 +239,62 @@ public class InstructorController {
     }
 
     @GetMapping("/activos")
-    public ResponseEntity<List<Instructor>> obtenerInstructoresActivos() {
+    public ResponseEntity<List<InstructorEntity>> obtenerInstructoresActivos() {
         try {
-            List<Instructor> instructores = instructorService.obtenerInstructoresActivos();
+            List<InstructorEntity> instructores = instructorService.obtenerInstructoresActivos();
             return ResponseEntity.ok(instructores);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // ==================== ENDPOINTS ADICIONALES ====================
+
+    @GetMapping("/conteo/activos")
+    public ResponseEntity<?> contarInstructoresActivos() {
+        try {
+            Long totalActivos = instructorService.contarInstructoresActivos();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("totalInstructoresActivos", totalActivos);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/verificar/{folioInstructor}")
+    public ResponseEntity<?> verificarInstructor(@PathVariable String folioInstructor) {
+        try {
+            boolean existe = instructorService.existeInstructor(folioInstructor);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("existe", existe);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/completo/{folioInstructor}")
+    public ResponseEntity<?> eliminarInstructorCompleto(@PathVariable String folioInstructor) {
+        try {
+            instructorService.eliminarInstructorCompleto(folioInstructor);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Instructor eliminado completamente del sistema");
+
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
