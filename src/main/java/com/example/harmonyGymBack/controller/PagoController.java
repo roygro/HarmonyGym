@@ -114,13 +114,14 @@ public class PagoController {
         }
     }
 
-    // GET - Obtener pago por ID
+    // GET - Obtener pago por ID - CORREGIDO
     @GetMapping("/{id}")
     public ResponseEntity<?> obtenerPagoPorId(@PathVariable Integer id) {
         try {
-            // Aquí necesitarías agregar un método en el servicio para buscar por ID
-            // Por ahora retornamos un mensaje de no implementado
-            return ResponseEntity.status(501).body("Funcionalidad en desarrollo");
+            Pago pago = pagoService.obtenerPagoPorId(id);
+            return ResponseEntity.ok(pago);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                     .body("Error al obtener el pago: " + e.getMessage());

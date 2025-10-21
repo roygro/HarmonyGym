@@ -85,4 +85,12 @@ public class PagoService {
         public Long getCantidadVentas() { return cantidadVentas; }
         public void setCantidadVentas(Long cantidadVentas) { this.cantidadVentas = cantidadVentas; }
     }
+
+    // Agrega este método en PagoService.java
+    public Pago obtenerPagoPorId(Integer id) {
+        return pagoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pago no encontrado con ID: " + id));
+    }
+
+
 }

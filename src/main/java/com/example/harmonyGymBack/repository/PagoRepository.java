@@ -39,4 +39,6 @@ public interface PagoRepository extends JpaRepository<Pago, Integer> {
     // Método alternativo: Obtener pagos por fecha específica
     @Query("SELECT p FROM Pago p WHERE CAST(p.fechaVenta AS localdate) = :fecha")
     List<Pago> findByFechaVentaDate(@Param("fecha") LocalDate fecha);
+
+
 }
