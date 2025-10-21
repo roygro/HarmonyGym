@@ -146,7 +146,9 @@ public class InstructorServiceImpl {
                             ultimoFolio = folio;
                         }
                     } catch (NumberFormatException e) {
-                        System.err.println("⚠ Folio con formato inválido: " + folio);
+
+                        System.err.println("⚠️ Folio con formato inválido: " + folio);
+
                     }
                 }
             }
@@ -243,7 +245,8 @@ public class InstructorServiceImpl {
                                                   String horaEntrada, String horaSalida, String especialidad,
                                                   String fechaContratacion, String estatus, MultipartFile foto,
                                                   boolean eliminarFoto) throws IOException {
-        System.out.println("✏ Actualizando instructor: " + folioInstructor);
+        System.out.println("✏️ Actualizando instructor: " + folioInstructor);
+
 
         Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
 
@@ -284,7 +287,7 @@ public class InstructorServiceImpl {
             if (instructorExistente.getNombreArchivoFoto() != null) {
                 eliminarArchivo(instructorExistente.getNombreArchivoFoto());
                 instructorExistente.setNombreArchivoFoto(null);
-                System.out.println("🗑 Foto eliminada");
+                System.out.println("🗑️ Foto eliminada");
             }
         } else if (foto != null && !foto.isEmpty()) {
             // Eliminar foto anterior si existe
@@ -366,7 +369,7 @@ public class InstructorServiceImpl {
 
     @Transactional
     public Instructor actualizarInstructor(String folioInstructor, Instructor instructorActualizado) {
-        System.out.println("✏ Actualizando instructor: " + folioInstructor);
+        System.out.println("✏️ Actualizando instructor: " + folioInstructor);
 
         Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
 
