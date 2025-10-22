@@ -6,7 +6,7 @@ import java.time.LocalTime;
 
 @Entity
 @Table(name = "INSTRUCTOR")
-public class InstructorEntity {
+public class Instructor {
 
     @Id
     @Column(name = "Folio_Instructor", length = 50)
@@ -38,11 +38,11 @@ public class InstructorEntity {
 
 
     // Constructores
-    public InstructorEntity() {}
+    public Instructor() {}
 
-    public InstructorEntity(String folioInstructor, String nombre, String app, String apm,
-                            LocalTime horaEntrada, LocalTime horaSalida, String especialidad,
-                            LocalDate fechaContratacion, String estatus) {
+    public Instructor(String folioInstructor, String nombre, String app, String apm,
+                      LocalTime horaEntrada, LocalTime horaSalida, String especialidad,
+                      LocalDate fechaContratacion, String estatus) {
         this.folioInstructor = folioInstructor;
         this.nombre = nombre;
         this.app = app;

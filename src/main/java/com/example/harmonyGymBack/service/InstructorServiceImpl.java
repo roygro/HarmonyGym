@@ -1,6 +1,6 @@
 package com.example.harmonyGymBack.service;
 
-import com.example.harmonyGymBack.model.InstructorEntity;
+import com.example.harmonyGymBack.model.Instructor;
 import com.example.harmonyGymBack.repository.InstructorRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -30,7 +30,7 @@ public class InstructorServiceImpl {
         try {
             System.out.println("🔍 Buscando último folio en la base de datos...");
 
-            List<InstructorEntity> todosInstructores = instructorRepository.findAll();
+            List<Instructor> todosInstructores = instructorRepository.findAll();
 
             if (todosInstructores.isEmpty()) {
                 System.out.println("✅ No hay instructores, empezando con INS001");
@@ -40,8 +40,8 @@ public class InstructorServiceImpl {
             String ultimoFolio = null;
             int maxNumero = 0;
 
-            for (InstructorEntity instructorEntity : todosInstructores) {
-                String folio = instructorEntity.getFolioInstructor();
+            for (Instructor instructor : todosInstructores) {
+                String folio = instructor.getFolioInstructor();
                 if (folio != null && folio.startsWith("INS")) {
                     try {
                         String numeroStr = folio.substring(3);
@@ -83,105 +83,105 @@ public class InstructorServiceImpl {
     // ==================== CREAR NUEVO INSTRUCTOR ====================
 
     @Transactional
-    public InstructorEntity crearInstructor(String nombre, String app, String apm,
-                                            String horaEntrada, String horaSalida,
-                                            String especialidad, String fechaContratacion,
-                                            String estatus) {
+    public Instructor crearInstructor(String nombre, String app, String apm,
+                                      String horaEntrada, String horaSalida,
+                                      String especialidad, String fechaContratacion,
+                                      String estatus) {
         System.out.println("🚀 Iniciando creación de instructorEntity...");
 
         // Generar folio
         String folioGenerado = generarFolioInstructor();
 
         // Crear objeto Instructor
-        InstructorEntity instructorEntity = new InstructorEntity();
-        instructorEntity.setFolioInstructor(folioGenerado);
-        instructorEntity.setNombre(nombre);
-        instructorEntity.setApp(app);
-        instructorEntity.setApm(apm);
-        instructorEntity.setEspecialidad(especialidad);
-        instructorEntity.setEstatus(estatus != null ? estatus : "Activo");
+        Instructor instructor = new Instructor();
+        instructor.setFolioInstructor(folioGenerado);
+        instructor.setNombre(nombre);
+        instructor.setApp(app);
+        instructor.setApm(apm);
+        instructor.setEspecialidad(especialidad);
+        instructor.setEstatus(estatus != null ? estatus : "Activo");
 
         // Convertir y validar horarios
         if (horaEntrada != null && !horaEntrada.trim().isEmpty()) {
-            instructorEntity.setHoraEntrada(LocalTime.parse(horaEntrada));
+            instructor.setHoraEntrada(LocalTime.parse(horaEntrada));
         }
         if (horaSalida != null && !horaSalida.trim().isEmpty()) {
-            instructorEntity.setHoraSalida(LocalTime.parse(horaSalida));
+            instructor.setHoraSalida(LocalTime.parse(horaSalida));
         }
 
         // Validar horarios
-        if (instructorEntity.getHoraEntrada() != null && instructorEntity.getHoraSalida() != null) {
-            if (instructorEntity.getHoraEntrada().isAfter(instructorEntity.getHoraSalida()) ||
-                    instructorEntity.getHoraEntrada().equals(instructorEntity.getHoraSalida())) {
+        if (instructor.getHoraEntrada() != null && instructor.getHoraSalida() != null) {
+            if (instructor.getHoraEntrada().isAfter(instructor.getHoraSalida()) ||
+                    instructor.getHoraEntrada().equals(instructor.getHoraSalida())) {
                 throw new RuntimeException("La hora de entrada debe ser anterior a la hora de salida");
             }
         }
 
         // Fecha de contratación
         if (fechaContratacion != null && !fechaContratacion.trim().isEmpty()) {
-            instructorEntity.setFechaContratacion(LocalDate.parse(fechaContratacion));
+            instructor.setFechaContratacion(LocalDate.parse(fechaContratacion));
         } else {
-            instructorEntity.setFechaContratacion(LocalDate.now());
+            instructor.setFechaContratacion(LocalDate.now());
         }
 
         // Guardar instructorEntity en base de datos
-        InstructorEntity instructorEntityGuardado = instructorRepository.save(instructorEntity);
+        Instructor instructorGuardado = instructorRepository.save(instructor);
         System.out.println("✅ Instructor creado exitosamente: " + folioGenerado);
 
-        return instructorEntityGuardado;
+        return instructorGuardado;
     }
 
     // ==================== ACTUALIZAR INSTRUCTOR ====================
 
     @Transactional
-    public InstructorEntity actualizarInstructor(String folioInstructor, String nombre, String app, String apm,
-                                                 String horaEntrada, String horaSalida, String especialidad,
-                                                 String fechaContratacion, String estatus) {
+    public Instructor actualizarInstructor(String folioInstructor, String nombre, String app, String apm,
+                                           String horaEntrada, String horaSalida, String especialidad,
+                                           String fechaContratacion, String estatus) {
         System.out.println("✏️ Actualizando instructorEntity: " + folioInstructor);
 
-        InstructorEntity instructorEntityExistente = obtenerInstructorPorId(folioInstructor);
+        Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
 
         // Actualizar campos básicos
-        if (nombre != null) instructorEntityExistente.setNombre(nombre);
-        if (app != null) instructorEntityExistente.setApp(app);
-        if (apm != null) instructorEntityExistente.setApm(apm);
-        if (especialidad != null) instructorEntityExistente.setEspecialidad(especialidad);
-        if (estatus != null) instructorEntityExistente.setEstatus(estatus);
+        if (nombre != null) instructorExistente.setNombre(nombre);
+        if (app != null) instructorExistente.setApp(app);
+        if (apm != null) instructorExistente.setApm(apm);
+        if (especialidad != null) instructorExistente.setEspecialidad(especialidad);
+        if (estatus != null) instructorExistente.setEstatus(estatus);
 
         // Actualizar horarios
         if (horaEntrada != null && !horaEntrada.trim().isEmpty()) {
-            instructorEntityExistente.setHoraEntrada(LocalTime.parse(horaEntrada));
+            instructorExistente.setHoraEntrada(LocalTime.parse(horaEntrada));
         }
         if (horaSalida != null && !horaSalida.trim().isEmpty()) {
-            instructorEntityExistente.setHoraSalida(LocalTime.parse(horaSalida));
+            instructorExistente.setHoraSalida(LocalTime.parse(horaSalida));
         }
 
         // Validar horarios
-        if (instructorEntityExistente.getHoraEntrada() != null && instructorEntityExistente.getHoraSalida() != null) {
-            if (instructorEntityExistente.getHoraEntrada().isAfter(instructorEntityExistente.getHoraSalida()) ||
-                    instructorEntityExistente.getHoraEntrada().equals(instructorEntityExistente.getHoraSalida())) {
+        if (instructorExistente.getHoraEntrada() != null && instructorExistente.getHoraSalida() != null) {
+            if (instructorExistente.getHoraEntrada().isAfter(instructorExistente.getHoraSalida()) ||
+                    instructorExistente.getHoraEntrada().equals(instructorExistente.getHoraSalida())) {
                 throw new RuntimeException("La hora de entrada debe ser anterior a la hora de salida");
             }
         }
 
         // Actualizar fecha de contratación
         if (fechaContratacion != null && !fechaContratacion.trim().isEmpty()) {
-            instructorEntityExistente.setFechaContratacion(LocalDate.parse(fechaContratacion));
+            instructorExistente.setFechaContratacion(LocalDate.parse(fechaContratacion));
         }
 
-        InstructorEntity instructorEntityActualizado = instructorRepository.save(instructorEntityExistente);
+        Instructor instructorActualizado = instructorRepository.save(instructorExistente);
         System.out.println("✅ Instructor actualizado: " + folioInstructor);
 
-        return instructorEntityActualizado;
+        return instructorActualizado;
     }
 
     // ==================== MÉTODOS ORIGINALES (para compatibilidad) ====================
 
-    public InstructorEntity crearInstructor(InstructorEntity instructorEntity) {
+    public Instructor crearInstructor(Instructor instructor) {
         System.out.println("🚀 Iniciando creación de instructorEntity...");
 
         String folioGenerado = generarFolioInstructor();
-        instructorEntity.setFolioInstructor(folioGenerado);
+        instructor.setFolioInstructor(folioGenerado);
 
         System.out.println("📝 Folio asignado: " + folioGenerado);
 
@@ -190,39 +190,39 @@ public class InstructorServiceImpl {
         }
 
         // Validar horarios
-        if (instructorEntity.getHoraEntrada() != null && instructorEntity.getHoraSalida() != null) {
-            if (instructorEntity.getHoraEntrada().isAfter(instructorEntity.getHoraSalida()) ||
-                    instructorEntity.getHoraEntrada().equals(instructorEntity.getHoraSalida())) {
+        if (instructor.getHoraEntrada() != null && instructor.getHoraSalida() != null) {
+            if (instructor.getHoraEntrada().isAfter(instructor.getHoraSalida()) ||
+                    instructor.getHoraEntrada().equals(instructor.getHoraSalida())) {
                 throw new RuntimeException("La hora de entrada debe ser anterior a la hora de salida");
             }
         }
 
-        if (instructorEntity.getFechaContratacion() == null) {
-            instructorEntity.setFechaContratacion(LocalDate.now());
+        if (instructor.getFechaContratacion() == null) {
+            instructor.setFechaContratacion(LocalDate.now());
         }
 
-        if (instructorEntity.getEstatus() == null) {
-            instructorEntity.setEstatus("Activo");
+        if (instructor.getEstatus() == null) {
+            instructor.setEstatus("Activo");
         }
 
-        InstructorEntity instructorEntityGuardado = instructorRepository.save(instructorEntity);
-        System.out.println("✅ Instructor guardado exitosamente: " + instructorEntityGuardado.getFolioInstructor());
+        Instructor instructorGuardado = instructorRepository.save(instructor);
+        System.out.println("✅ Instructor guardado exitosamente: " + instructorGuardado.getFolioInstructor());
 
-        return instructorEntityGuardado;
+        return instructorGuardado;
     }
 
     // ==================== CONSULTAS Y LISTADOS ====================
 
-    public List<InstructorEntity> obtenerTodosLosInstructores() {
+    public List<Instructor> obtenerTodosLosInstructores() {
         return instructorRepository.findAll();
     }
 
-    public InstructorEntity obtenerInstructorPorId(String folioInstructor) {
-        Optional<InstructorEntity> instructorEntity = instructorRepository.findByFolioInstructor(folioInstructor);
+    public Instructor obtenerInstructorPorId(String folioInstructor) {
+        Optional<Instructor> instructorEntity = instructorRepository.findByFolioInstructor(folioInstructor);
         return instructorEntity.orElseThrow(() -> new RuntimeException("Instructor no encontrado con folio: " + folioInstructor));
     }
 
-    public List<InstructorEntity> obtenerInstructoresFiltrados(String estatus, String especialidad) {
+    public List<Instructor> obtenerInstructoresFiltrados(String estatus, String especialidad) {
         if (estatus != null && especialidad != null) {
             return instructorRepository.findByEstatusAndEspecialidadContainingIgnoreCase(estatus, especialidad);
         } else if (estatus != null) {
@@ -237,65 +237,65 @@ public class InstructorServiceImpl {
     // ==================== ACTUALIZAR INSTRUCTOR (método original) ====================
 
     @Transactional
-    public InstructorEntity actualizarInstructor(String folioInstructor, InstructorEntity instructorEntityActualizado) {
+    public Instructor actualizarInstructor(String folioInstructor, Instructor instructorActualizado) {
         System.out.println("✏️ Actualizando instructorEntity: " + folioInstructor);
 
-        InstructorEntity instructorEntityExistente = obtenerInstructorPorId(folioInstructor);
+        Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
 
         // Validar horarios
-        if (instructorEntityActualizado.getHoraEntrada() != null && instructorEntityActualizado.getHoraSalida() != null) {
-            if (instructorEntityActualizado.getHoraEntrada().isAfter(instructorEntityActualizado.getHoraSalida()) ||
-                    instructorEntityActualizado.getHoraEntrada().equals(instructorEntityActualizado.getHoraSalida())) {
+        if (instructorActualizado.getHoraEntrada() != null && instructorActualizado.getHoraSalida() != null) {
+            if (instructorActualizado.getHoraEntrada().isAfter(instructorActualizado.getHoraSalida()) ||
+                    instructorActualizado.getHoraEntrada().equals(instructorActualizado.getHoraSalida())) {
                 throw new RuntimeException("La hora de entrada debe ser anterior a la hora de salida");
             }
         }
 
         // Actualizar campos (NO actualizar folioInstructor)
-        if (instructorEntityActualizado.getNombre() != null) {
-            instructorEntityExistente.setNombre(instructorEntityActualizado.getNombre());
+        if (instructorActualizado.getNombre() != null) {
+            instructorExistente.setNombre(instructorActualizado.getNombre());
         }
-        if (instructorEntityActualizado.getApp() != null) {
-            instructorEntityExistente.setApp(instructorEntityActualizado.getApp());
+        if (instructorActualizado.getApp() != null) {
+            instructorExistente.setApp(instructorActualizado.getApp());
         }
-        if (instructorEntityActualizado.getApm() != null) {
-            instructorEntityExistente.setApm(instructorEntityActualizado.getApm());
+        if (instructorActualizado.getApm() != null) {
+            instructorExistente.setApm(instructorActualizado.getApm());
         }
-        if (instructorEntityActualizado.getHoraEntrada() != null) {
-            instructorEntityExistente.setHoraEntrada(instructorEntityActualizado.getHoraEntrada());
+        if (instructorActualizado.getHoraEntrada() != null) {
+            instructorExistente.setHoraEntrada(instructorActualizado.getHoraEntrada());
         }
-        if (instructorEntityActualizado.getHoraSalida() != null) {
-            instructorEntityExistente.setHoraSalida(instructorEntityActualizado.getHoraSalida());
+        if (instructorActualizado.getHoraSalida() != null) {
+            instructorExistente.setHoraSalida(instructorActualizado.getHoraSalida());
         }
-        if (instructorEntityActualizado.getEspecialidad() != null) {
-            instructorEntityExistente.setEspecialidad(instructorEntityActualizado.getEspecialidad());
+        if (instructorActualizado.getEspecialidad() != null) {
+            instructorExistente.setEspecialidad(instructorActualizado.getEspecialidad());
         }
-        if (instructorEntityActualizado.getFechaContratacion() != null) {
-            instructorEntityExistente.setFechaContratacion(instructorEntityActualizado.getFechaContratacion());
+        if (instructorActualizado.getFechaContratacion() != null) {
+            instructorExistente.setFechaContratacion(instructorActualizado.getFechaContratacion());
         }
-        if (instructorEntityActualizado.getEstatus() != null) {
-            instructorEntityExistente.setEstatus(instructorEntityActualizado.getEstatus());
+        if (instructorActualizado.getEstatus() != null) {
+            instructorExistente.setEstatus(instructorActualizado.getEstatus());
         }
 
-        InstructorEntity instructorEntityActualizadoDb = instructorRepository.save(instructorEntityExistente);
-        System.out.println("✅ Instructor actualizado: " + instructorEntityActualizadoDb.getFolioInstructor());
+        Instructor instructorActualizadoDb = instructorRepository.save(instructorExistente);
+        System.out.println("✅ Instructor actualizado: " + instructorActualizadoDb.getFolioInstructor());
 
-        return instructorEntityActualizadoDb;
+        return instructorActualizadoDb;
     }
 
     // ==================== GESTIÓN DE ESTATUS ====================
 
     @Transactional
-    public InstructorEntity cambiarEstatusInstructor(String folioInstructor, String nuevoEstatus) {
-        InstructorEntity instructorEntity = obtenerInstructorPorId(folioInstructor);
-        instructorEntity.setEstatus(nuevoEstatus);
-        return instructorRepository.save(instructorEntity);
+    public Instructor cambiarEstatusInstructor(String folioInstructor, String nuevoEstatus) {
+        Instructor instructor = obtenerInstructorPorId(folioInstructor);
+        instructor.setEstatus(nuevoEstatus);
+        return instructorRepository.save(instructor);
     }
 
-    public InstructorEntity desactivarInstructor(String folioInstructor) {
+    public Instructor desactivarInstructor(String folioInstructor) {
         return cambiarEstatusInstructor(folioInstructor, "Inactivo");
     }
 
-    public InstructorEntity activarInstructor(String folioInstructor) {
+    public Instructor activarInstructor(String folioInstructor) {
         return cambiarEstatusInstructor(folioInstructor, "Activo");
     }
 
@@ -363,11 +363,11 @@ public class InstructorServiceImpl {
         return instructorRepository.existsByFolioInstructor(folioInstructor);
     }
 
-    public List<InstructorEntity> obtenerInstructoresActivos() {
+    public List<Instructor> obtenerInstructoresActivos() {
         return instructorRepository.findByEstatusOrderByNombreAsc("Activo");
     }
 
-    public List<InstructorEntity> buscarInstructoresPorNombre(String nombre) {
+    public List<Instructor> buscarInstructoresPorNombre(String nombre) {
         return instructorRepository.findByNombreContainingIgnoreCase(nombre);
     }
 
@@ -375,7 +375,7 @@ public class InstructorServiceImpl {
         return instructorRepository.findByEstatus("Activo").stream().count();
     }
 
-    public List<InstructorEntity> obtenerInstructoresPorEspecialidad(String especialidad) {
+    public List<Instructor> obtenerInstructoresPorEspecialidad(String especialidad) {
         return instructorRepository.findByEspecialidadContainingIgnoreCase(especialidad);
     }
 
@@ -383,10 +383,10 @@ public class InstructorServiceImpl {
 
     @Transactional
     public void eliminarInstructorCompleto(String folioInstructor) {
-        InstructorEntity instructorEntity = obtenerInstructorPorId(folioInstructor);
+        Instructor instructor = obtenerInstructorPorId(folioInstructor);
 
         // Eliminar de la base de datos
-        instructorRepository.delete(instructorEntity);
+        instructorRepository.delete(instructor);
         System.out.println("✅ Instructor eliminado completamente: " + folioInstructor);
     }
 }

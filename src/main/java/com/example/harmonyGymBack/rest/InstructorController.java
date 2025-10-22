@@ -1,6 +1,6 @@
 package com.example.harmonyGymBack.rest;
 
-import com.example.harmonyGymBack.model.InstructorEntity;
+import com.example.harmonyGymBack.model.Instructor;
 import com.example.harmonyGymBack.service.InstructorServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -33,14 +33,14 @@ public class InstructorController {
             @RequestParam(value = "estatus", required = false) String estatus) {
 
         try {
-            InstructorEntity instructorEntity = instructorService.crearInstructor(
+            Instructor instructor = instructorService.crearInstructor(
                     nombre, app, apm, horaEntrada, horaSalida, especialidad,
                     fechaContratacion, estatus);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Instructor creado exitosamente");
-            response.put("instructor", instructorEntity);
+            response.put("instructor", instructor);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
@@ -67,14 +67,14 @@ public class InstructorController {
             @RequestParam(value = "estatus", required = false) String estatus) {
 
         try {
-            InstructorEntity instructorEntity = instructorService.actualizarInstructor(
+            Instructor instructor = instructorService.actualizarInstructor(
                     folioInstructor, nombre, app, apm, horaEntrada, horaSalida,
                     especialidad, fechaContratacion, estatus);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Instructor actualizado exitosamente");
-            response.put("instructor", instructorEntity);
+            response.put("instructor", instructor);
 
             return ResponseEntity.ok(response);
 
@@ -89,14 +89,14 @@ public class InstructorController {
     // ==================== CREAR INSTRUCTOR CON OBJETO (para compatibilidad) ====================
 
     @PostMapping("/crear")
-    public ResponseEntity<?> crearInstructor(@RequestBody InstructorEntity instructorEntity) {
+    public ResponseEntity<?> crearInstructor(@RequestBody Instructor instructor) {
         try {
-            InstructorEntity instructorEntityCreado = instructorService.crearInstructor(instructorEntity);
+            Instructor instructorCreado = instructorService.crearInstructor(instructor);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Instructor creado exitosamente");
-            response.put("instructor", instructorEntityCreado);
+            response.put("instructor", instructorCreado);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
@@ -112,14 +112,14 @@ public class InstructorController {
 
     @PutMapping("/actualizar/{folioInstructor}")
     public ResponseEntity<?> actualizarInstructor(@PathVariable String folioInstructor,
-                                                  @RequestBody InstructorEntity instructorEntity) {
+                                                  @RequestBody Instructor instructor) {
         try {
-            InstructorEntity instructorEntityActualizado = instructorService.actualizarInstructor(folioInstructor, instructorEntity);
+            Instructor instructorActualizado = instructorService.actualizarInstructor(folioInstructor, instructor);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Instructor actualizado exitosamente");
-            response.put("instructor", instructorEntityActualizado);
+            response.put("instructor", instructorActualizado);
 
             return ResponseEntity.ok(response);
 
@@ -134,9 +134,9 @@ public class InstructorController {
     // ==================== ENDPOINTS EXISTENTES ====================
 
     @GetMapping
-    public ResponseEntity<List<InstructorEntity>> obtenerTodosLosInstructores() {
+    public ResponseEntity<List<Instructor>> obtenerTodosLosInstructores() {
         try {
-            List<InstructorEntity> instructores = instructorService.obtenerTodosLosInstructores();
+            List<Instructor> instructores = instructorService.obtenerTodosLosInstructores();
             return ResponseEntity.ok(instructores);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -146,8 +146,8 @@ public class InstructorController {
     @GetMapping("/{folioInstructor}")
     public ResponseEntity<?> obtenerInstructorPorId(@PathVariable String folioInstructor) {
         try {
-            InstructorEntity instructorEntity = instructorService.obtenerInstructorPorId(folioInstructor);
-            return ResponseEntity.ok(instructorEntity);
+            Instructor instructor = instructorService.obtenerInstructorPorId(folioInstructor);
+            return ResponseEntity.ok(instructor);
         } catch (RuntimeException e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
@@ -159,11 +159,11 @@ public class InstructorController {
     }
 
     @GetMapping("/filtros")
-    public ResponseEntity<List<InstructorEntity>> obtenerInstructoresFiltrados(
+    public ResponseEntity<List<Instructor>> obtenerInstructoresFiltrados(
             @RequestParam(value = "estatus", required = false) String estatus,
             @RequestParam(value = "especialidad", required = false) String especialidad) {
         try {
-            List<InstructorEntity> instructores = instructorService.obtenerInstructoresFiltrados(estatus, especialidad);
+            List<Instructor> instructores = instructorService.obtenerInstructoresFiltrados(estatus, especialidad);
             return ResponseEntity.ok(instructores);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -175,12 +175,12 @@ public class InstructorController {
             @PathVariable String folioInstructor,
             @RequestParam String estatus) {
         try {
-            InstructorEntity instructorEntity = instructorService.cambiarEstatusInstructor(folioInstructor, estatus);
+            Instructor instructor = instructorService.cambiarEstatusInstructor(folioInstructor, estatus);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Estatus actualizado exitosamente");
-            response.put("instructor", instructorEntity);
+            response.put("instructor", instructor);
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -229,9 +229,9 @@ public class InstructorController {
     }
 
     @GetMapping("/buscar")
-    public ResponseEntity<List<InstructorEntity>> buscarInstructoresPorNombre(@RequestParam String nombre) {
+    public ResponseEntity<List<Instructor>> buscarInstructoresPorNombre(@RequestParam String nombre) {
         try {
-            List<InstructorEntity> instructores = instructorService.buscarInstructoresPorNombre(nombre);
+            List<Instructor> instructores = instructorService.buscarInstructoresPorNombre(nombre);
             return ResponseEntity.ok(instructores);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -239,9 +239,9 @@ public class InstructorController {
     }
 
     @GetMapping("/activos")
-    public ResponseEntity<List<InstructorEntity>> obtenerInstructoresActivos() {
+    public ResponseEntity<List<Instructor>> obtenerInstructoresActivos() {
         try {
-            List<InstructorEntity> instructores = instructorService.obtenerInstructoresActivos();
+            List<Instructor> instructores = instructorService.obtenerInstructoresActivos();
             return ResponseEntity.ok(instructores);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

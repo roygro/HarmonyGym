@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "ACTIVIDAD")
-public class ActividadEntity {
+public class Actividad {
 
     @Id
     @Column(name = "Id_Actividad")
@@ -51,17 +51,17 @@ public class ActividadEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Folio_Instructor", referencedColumnName = "Folio_Instructor", insertable = false, updatable = false)
     @JsonIgnore // ✅ Esto evita que Jackson intente serializar la relación lazy
-    private InstructorEntity instructorEntity;
+    private Instructor instructor;
 
     // Constructores
-    public ActividadEntity() {
+    public Actividad() {
         this.fechaCreacion = LocalDateTime.now();
         this.fechaActividad = LocalDate.now();
     }
 
-    public ActividadEntity(String idActividad, String nombreActividad, LocalDate fechaActividad,
-                           LocalTime horaInicio, LocalTime horaFin, String descripcion,
-                           Integer cupo, String lugar, String imagenUrl, String folioInstructor) {
+    public Actividad(String idActividad, String nombreActividad, LocalDate fechaActividad,
+                     LocalTime horaInicio, LocalTime horaFin, String descripcion,
+                     Integer cupo, String lugar, String imagenUrl, String folioInstructor) {
         this();
         this.idActividad = idActividad;
         this.nombreActividad = nombreActividad;
@@ -112,6 +112,6 @@ public class ActividadEntity {
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
 
-    public InstructorEntity getInstructor() { return instructorEntity; }
-    public void setInstructor(InstructorEntity instructorEntity) { this.instructorEntity = instructorEntity; }
+    public Instructor getInstructor() { return instructor; }
+    public void setInstructor(Instructor instructor) { this.instructor = instructor; }
 }

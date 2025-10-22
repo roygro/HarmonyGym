@@ -1,6 +1,6 @@
 package com.example.harmonyGymBack.repository;
 
-import com.example.harmonyGymBack.model.ActividadEntity;
+import com.example.harmonyGymBack.model.Actividad;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,38 +11,38 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Repository
-public interface ActividadRepository extends JpaRepository<ActividadEntity, String> {
+public interface ActividadRepository extends JpaRepository<Actividad, String> {
 
     // Buscar actividades por nombre
-    List<ActividadEntity> findByNombreActividadContainingIgnoreCase(String nombre);
+    List<Actividad> findByNombreActividadContainingIgnoreCase(String nombre);
 
     // Buscar actividades por estatus
-    List<ActividadEntity> findByEstatus(String estatus);
+    List<Actividad> findByEstatus(String estatus);
 
     // Buscar actividades por lugar
-    List<ActividadEntity> findByLugarContainingIgnoreCase(String lugar);
+    List<Actividad> findByLugarContainingIgnoreCase(String lugar);
 
     // Buscar actividades activas ordenadas por fecha y hora
-    List<ActividadEntity> findByEstatusOrderByFechaActividadAscHoraInicioAsc(String estatus);
+    List<Actividad> findByEstatusOrderByFechaActividadAscHoraInicioAsc(String estatus);
 
     // Buscar actividades por instructor
-    List<ActividadEntity> findByFolioInstructorAndEstatus(String folioInstructor, String estatus);
+    List<Actividad> findByFolioInstructorAndEstatus(String folioInstructor, String estatus);
 
     // Buscar actividades por fecha
-    List<ActividadEntity> findByFechaActividadAndEstatus(LocalDate fecha, String estatus);
+    List<Actividad> findByFechaActividadAndEstatus(LocalDate fecha, String estatus);
 
     // Buscar actividades por instructor y fecha
-    List<ActividadEntity> findByFolioInstructorAndFechaActividadAndEstatus(String folioInstructor, LocalDate fecha, String estatus);
+    List<Actividad> findByFolioInstructorAndFechaActividadAndEstatus(String folioInstructor, LocalDate fecha, String estatus);
 
     // Verificar conflicto de horarios considerando fecha
     @Query("SELECT a FROM Actividad a WHERE a.lugar = :lugar AND a.fechaActividad = :fecha AND a.estatus = 'Activa' " +
             "AND ((a.horaInicio BETWEEN :horaInicio AND :horaFin) OR " +
             "(a.horaFin BETWEEN :horaInicio AND :horaFin) OR " +
             "(:horaInicio BETWEEN a.horaInicio AND a.horaFin))")
-    List<ActividadEntity> findConflictingActivities(@Param("lugar") String lugar,
-                                                    @Param("fecha") LocalDate fecha,
-                                                    @Param("horaInicio") LocalTime horaInicio,
-                                                    @Param("horaFin") LocalTime horaFin);
+    List<Actividad> findConflictingActivities(@Param("lugar") String lugar,
+                                              @Param("fecha") LocalDate fecha,
+                                              @Param("horaInicio") LocalTime horaInicio,
+                                              @Param("horaFin") LocalTime horaFin);
 
     // Verificar conflicto de horarios excluyendo una actividad específica
     @Query("SELECT a FROM Actividad a WHERE a.lugar = :lugar AND a.fechaActividad = :fecha AND a.estatus = 'Activa' " +
@@ -50,20 +50,20 @@ public interface ActividadRepository extends JpaRepository<ActividadEntity, Stri
             "AND ((a.horaInicio BETWEEN :horaInicio AND :horaFin) OR " +
             "(a.horaFin BETWEEN :horaInicio AND :horaFin) OR " +
             "(:horaInicio BETWEEN a.horaInicio AND a.horaFin))")
-    List<ActividadEntity> findConflictingActivitiesExcluding(@Param("lugar") String lugar,
-                                                             @Param("fecha") LocalDate fecha,
-                                                             @Param("horaInicio") LocalTime horaInicio,
-                                                             @Param("horaFin") LocalTime horaFin,
-                                                             @Param("excludeId") String excludeId);
+    List<Actividad> findConflictingActivitiesExcluding(@Param("lugar") String lugar,
+                                                       @Param("fecha") LocalDate fecha,
+                                                       @Param("horaInicio") LocalTime horaInicio,
+                                                       @Param("horaFin") LocalTime horaFin,
+                                                       @Param("excludeId") String excludeId);
 
     // Contar actividades activas
     Long countByEstatus(String estatus);
     // Buscar por estatus y lugar (case insensitive)
-    List<ActividadEntity> findByEstatusAndLugarContainingIgnoreCase(String estatus, String lugar);
+    List<Actividad> findByEstatusAndLugarContainingIgnoreCase(String estatus, String lugar);
 
     // Verificar existencia
     boolean existsById(String idActividad);
 
     // Obtener actividades futuras
-    List<ActividadEntity> findByFechaActividadGreaterThanEqualAndEstatusOrderByFechaActividadAscHoraInicioAsc(LocalDate fecha, String estatus);
+    List<Actividad> findByFechaActividadGreaterThanEqualAndEstatusOrderByFechaActividadAscHoraInicioAsc(LocalDate fecha, String estatus);
 }

@@ -1,6 +1,6 @@
 package com.example.harmonyGymBack.repository;
 
-import com.example.harmonyGymBack.model.InstructorEntity;
+import com.example.harmonyGymBack.model.Instructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,28 +10,28 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface InstructorRepository extends JpaRepository<InstructorEntity, String> {
+public interface InstructorRepository extends JpaRepository<Instructor, String> {
 
     // Buscar instructores por estatus
-    List<InstructorEntity> findByEstatus(String estatus);
+    List<Instructor> findByEstatus(String estatus);
 
     // Buscar instructores por especialidad (case insensitive)
-    List<InstructorEntity> findByEspecialidadContainingIgnoreCase(String especialidad);
+    List<Instructor> findByEspecialidadContainingIgnoreCase(String especialidad);
 
     // Buscar instructores activos ordenados por nombre
-    List<InstructorEntity> findByEstatusOrderByNombreAsc(String estatus);
+    List<Instructor> findByEstatusOrderByNombreAsc(String estatus);
 
     // Buscar por estatus y especialidad
-    List<InstructorEntity> findByEstatusAndEspecialidadContainingIgnoreCase(String estatus, String especialidad);
+    List<Instructor> findByEstatusAndEspecialidadContainingIgnoreCase(String estatus, String especialidad);
 
     // Verificar si existe un instructorEntity por folio
     boolean existsByFolioInstructor(String folioInstructor);
 
     // Buscar por nombre (case insensitive)
-    List<InstructorEntity> findByNombreContainingIgnoreCase(String nombre);
+    List<Instructor> findByNombreContainingIgnoreCase(String nombre);
 
     // Buscar por folio
-    Optional<InstructorEntity> findByFolioInstructor(String folioInstructor);
+    Optional<Instructor> findByFolioInstructor(String folioInstructor);
 
     // Obtener instructorEntity con información extendida del usuario
     @Query(value = """
