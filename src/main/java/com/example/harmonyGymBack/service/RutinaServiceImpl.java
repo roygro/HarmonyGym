@@ -336,4 +336,43 @@ public class RutinaServiceImpl {
 
         rutina.setDuracionEstimada(duracionTotal);
     }
+
+    // ==================== MÉTODOS PARA CAMBIAR ESTATUS ====================
+
+    @Transactional
+    public RutinaEntity cambiarEstatusRutina(String folioRutina, String nuevoEstatus) {
+        Optional<RutinaEntity> rutinaOpt = rutinaRepository.findByFolioRutina(folioRutina);
+
+        if (rutinaOpt.isPresent()) {
+            RutinaEntity rutina = rutinaOpt.get();
+
+            // Validar que el nuevo estatus sea válido
+            if (!"Activa".equals(nuevoEstatus) && !"Inactiva".equals(nuevoEstatus)) {
+                throw new RuntimeException("Estatus no válido. Debe ser 'Activa' o 'Inactiva'");
+            }
+
+            rutina.setEstatus(nuevoEstatus);
+            return rutinaRepository.save(rutina);
+        }
+
+        throw new RuntimeException("Rutina no encontrada: " + folioRutina);
+    }
+
+    @Transactional
+    public RutinaEntity activarRutina(String folioRutina) {
+        return cambiarEstatusRutina(folioRutina, "Activa");
+    }
+
+    @Transactional
+    public RutinaEntity inactivarRutina(String folioRutina) {
+        return cambiarEstatusRutina(folioRutina, "Inactiva");
+    }
+
+    // Método para obtener rutinas por estatus
+    public List<RutinaEntity> findByEstatus(String estatus) {
+        if (!"Activa".equals(estatus) && !"Inactiva".equals(estatus)) {
+            throw new RuntimeException("Estatus no válido. Debe ser 'Activa' o 'Inactiva'");
+        }
+        return rutinaRepository.findByEstatus(estatus);
+    }
 }
