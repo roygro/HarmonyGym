@@ -68,4 +68,9 @@ public interface ClienteRepository extends JpaRepository<Cliente, String> {
 
     // Verificar si existe cliente por folio
     boolean existsByFolioCliente(String folioCliente);
+    @Query(value = "SELECT c.* FROM cliente c WHERE c.folio_cliente NOT IN " +
+            "(SELECT a.cliente_asignado FROM asigna a WHERE a.folio_rutina = :folioRutina)",
+            nativeQuery = true)
+    List<Cliente> findClientesNoAsignadosByRutina(@Param("folioRutina") String folioRutina);
+
 }

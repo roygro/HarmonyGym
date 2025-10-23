@@ -1,61 +1,106 @@
 package com.example.harmonyGymBack.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "RUTINA")
+@Table(name = "rutina")
 public class RutinaEntity {
-
     @Id
-    @Column(name = "folio_rutina", length = 50)
+    @Column(name = "folio_rutina")
     private String folioRutina;
 
-    @Column(name = "nombre", length = 100, nullable = false)
+    @Column(name = "nombre", nullable = false)
     private String nombre;
 
-    @Column(name = "descripcion", columnDefinition = "TEXT")
+    @Column(name = "descripcion")
     private String descripcion;
 
-    @Column(name = "nivel", length = 20)
+    @Column(name = "nivel")
     private String nivel;
 
-    @Column(name = "objetivo", length = 100)
+    @Column(name = "objetivo")
     private String objetivo;
 
     @Column(name = "duracion_estimada")
     private Integer duracionEstimada;
 
-    @Column(name = "estatus", length = 10)
-    private String estatus = "Activa";
+    @Column(name = "estatus")
+    private String estatus;
 
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 
-    @Column(name = "folio_instructor", length = 50)
+    @Column(name = "folio_instructor", nullable = false)
+
     private String folioInstructor;
 
-    // Lista de ejercicios (relación virtual para consultas)
-    @Transient
-    private List<EjercicioRutinaDTO> ejercicios = new ArrayList<>();
+    // Relación con Instructor (solo para consultas)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
+    @JoinColumn(name = "folio_instructor", referencedColumnName = "folio_instructor", insertable = false, updatable = false)
+    private Instructor instructor;
+
+    // Ejercicios integrados - CORREGIDO: Quitar @OrderColumn
+    @ElementCollection
+    @CollectionTable(
+            name = "contiene_rutina",
+            joinColumns = @JoinColumn(name = "folio_rutina")
+    )
+    private List<EjercicioRutina> ejercicios = new ArrayList<>();
 
     // Constructores
     public RutinaEntity() {
         this.fechaCreacion = LocalDateTime.now();
+        this.estatus = "Activa";
     }
 
-    public RutinaEntity(String folioRutina, String nombre, String descripcion, String nivel,
-                        String objetivo, Integer duracionEstimada, String folioInstructor) {
-        this.folioRutina = folioRutina;
-        this.nombre = nombre;
-        this.descripcion = descripcion;
-        this.nivel = nivel;
-        this.objetivo = objetivo;
-        this.duracionEstimada = duracionEstimada;
-        this.folioInstructor = folioInstructor;
-        this.fechaCreacion = LocalDateTime.now();
+
+
+
+    // Clase embeddable para los ejercicios de la rutina
+    @Embeddable
+    public static class EjercicioRutina {
+        @Column(name = "id_ejercicio", nullable = false)
+        private String idEjercicio;
+
+        // CORREGIDO: Esta es la única propiedad que mapea a la columna 'orden'
+        @Column(name = "orden", nullable = false)
+        private Integer orden;
+
+        @Column(name = "series_ejercicio")
+        private Integer seriesEjercicio;
+
+        @Column(name = "repeticiones_ejercicio")
+        private Integer repeticionesEjercicio;
+
+        @Column(name = "descanso_ejercicio")
+        private Integer descansoEjercicio;
+
+        @Column(name = "instrucciones")
+        private String instrucciones;
+
+        // Getters y Setters
+        public String getIdEjercicio() { return idEjercicio; }
+        public void setIdEjercicio(String idEjercicio) { this.idEjercicio = idEjercicio; }
+
+        public Integer getOrden() { return orden; }
+        public void setOrden(Integer orden) { this.orden = orden; }
+
+        public Integer getSeriesEjercicio() { return seriesEjercicio; }
+        public void setSeriesEjercicio(Integer seriesEjercicio) { this.seriesEjercicio = seriesEjercicio; }
+
+        public Integer getRepeticionesEjercicio() { return repeticionesEjercicio; }
+        public void setRepeticionesEjercicio(Integer repeticionesEjercicio) { this.repeticionesEjercicio = repeticionesEjercicio; }
+
+        public Integer getDescansoEjercicio() { return descansoEjercicio; }
+        public void setDescansoEjercicio(Integer descansoEjercicio) { this.descansoEjercicio = descansoEjercicio; }
+
+        public String getInstrucciones() { return instrucciones; }
+        public void setInstrucciones(String instrucciones) { this.instrucciones = instrucciones; }
     }
 
     // Getters y Setters
@@ -86,164 +131,11 @@ public class RutinaEntity {
     public String getFolioInstructor() { return folioInstructor; }
     public void setFolioInstructor(String folioInstructor) { this.folioInstructor = folioInstructor; }
 
-    public List<EjercicioRutinaDTO> getEjercicios() { return ejercicios; }
-    public void setEjercicios(List<EjercicioRutinaDTO> ejercicios) { this.ejercicios = ejercicios; }
+    public Instructor getInstructor() { return instructor; }
+    public void setInstructor(Instructor instructor) { this.instructor = instructor; }
 
-    // ===== CLASES DTO INTERNAS =====
+    public List<EjercicioRutina> getEjercicios() { return ejercicios; }
+    public void setEjercicios(List<EjercicioRutina> ejercicios) { this.ejercicios = ejercicios; }
 
-    // DTO para agregar ejercicios a rutina
-    public static class AgregarEjercicioRequest {
-        private String idEjercicio;
-        private Integer orden;
-        private Integer seriesEjercicio;
-        private Integer repeticionesEjercicio;
-        private Integer descansoEjercicio;
-        private String observaciones;
 
-        public AgregarEjercicioRequest() {}
-
-        public AgregarEjercicioRequest(String idEjercicio, Integer orden, Integer seriesEjercicio,
-                                       Integer repeticionesEjercicio, Integer descansoEjercicio, String observaciones) {
-            this.idEjercicio = idEjercicio;
-            this.orden = orden;
-            this.seriesEjercicio = seriesEjercicio;
-            this.repeticionesEjercicio = repeticionesEjercicio;
-            this.descansoEjercicio = descansoEjercicio;
-            this.observaciones = observaciones;
-        }
-
-        // Getters y Setters
-        public String getIdEjercicio() { return idEjercicio; }
-        public void setIdEjercicio(String idEjercicio) { this.idEjercicio = idEjercicio; }
-        public Integer getOrden() { return orden; }
-        public void setOrden(Integer orden) { this.orden = orden; }
-        public Integer getSeriesEjercicio() { return seriesEjercicio; }
-        public void setSeriesEjercicio(Integer seriesEjercicio) { this.seriesEjercicio = seriesEjercicio; }
-        public Integer getRepeticionesEjercicio() { return repeticionesEjercicio; }
-        public void setRepeticionesEjercicio(Integer repeticionesEjercicio) { this.repeticionesEjercicio = repeticionesEjercicio; }
-        public Integer getDescansoEjercicio() { return descansoEjercicio; }
-        public void setDescansoEjercicio(Integer descansoEjercicio) { this.descansoEjercicio = descansoEjercicio; }
-        public String getObservaciones() { return observaciones; }
-        public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
-    }
-
-    // DTO para respuesta de ejercicios en rutina
-    public static class EjercicioRutinaDTO {
-        private String idEjercicio;
-        private String nombre;
-        private Integer tiempo;
-        private Integer series;
-        private Integer repeticiones;
-        private Integer descanso;
-        private String equipoNecesario;
-        private String grupoMuscular;
-        private String instrucciones;
-        private Integer orden;
-        private Integer seriesEjercicio;
-        private Integer repeticionesEjercicio;
-        private Integer descansoEjercicio;
-        private String observaciones;
-
-        public EjercicioRutinaDTO() {}
-
-        public EjercicioRutinaDTO(String idEjercicio, String nombre, Integer tiempo, Integer series,
-                                  Integer repeticiones, Integer descanso, String equipoNecesario,
-                                  String grupoMuscular, String instrucciones, Integer orden,
-                                  Integer seriesEjercicio, Integer repeticionesEjercicio,
-                                  Integer descansoEjercicio, String observaciones) {
-            this.idEjercicio = idEjercicio;
-            this.nombre = nombre;
-            this.tiempo = tiempo;
-            this.series = series;
-            this.repeticiones = repeticiones;
-            this.descanso = descanso;
-            this.equipoNecesario = equipoNecesario;
-            this.grupoMuscular = grupoMuscular;
-            this.instrucciones = instrucciones;
-            this.orden = orden;
-            this.seriesEjercicio = seriesEjercicio;
-            this.repeticionesEjercicio = repeticionesEjercicio;
-            this.descansoEjercicio = descansoEjercicio;
-            this.observaciones = observaciones;
-        }
-
-        // Getters y Setters
-        public String getIdEjercicio() { return idEjercicio; }
-        public void setIdEjercicio(String idEjercicio) { this.idEjercicio = idEjercicio; }
-        public String getNombre() { return nombre; }
-        public void setNombre(String nombre) { this.nombre = nombre; }
-        public Integer getTiempo() { return tiempo; }
-        public void setTiempo(Integer tiempo) { this.tiempo = tiempo; }
-        public Integer getSeries() { return series; }
-        public void setSeries(Integer series) { this.series = series; }
-        public Integer getRepeticiones() { return repeticiones; }
-        public void setRepeticiones(Integer repeticiones) { this.repeticiones = repeticiones; }
-        public Integer getDescanso() { return descanso; }
-        public void setDescanso(Integer descanso) { this.descanso = descanso; }
-        public String getEquipoNecesario() { return equipoNecesario; }
-        public void setEquipoNecesario(String equipoNecesario) { this.equipoNecesario = equipoNecesario; }
-        public String getGrupoMuscular() { return grupoMuscular; }
-        public void setGrupoMuscular(String grupoMuscular) { this.grupoMuscular = grupoMuscular; }
-        public String getInstrucciones() { return instrucciones; }
-        public void setInstrucciones(String instrucciones) { this.instrucciones = instrucciones; }
-        public Integer getOrden() { return orden; }
-        public void setOrden(Integer orden) { this.orden = orden; }
-        public Integer getSeriesEjercicio() { return seriesEjercicio; }
-        public void setSeriesEjercicio(Integer seriesEjercicio) { this.seriesEjercicio = seriesEjercicio; }
-        public Integer getRepeticionesEjercicio() { return repeticionesEjercicio; }
-        public void setRepeticionesEjercicio(Integer repeticionesEjercicio) { this.repeticionesEjercicio = repeticionesEjercicio; }
-        public Integer getDescansoEjercicio() { return descansoEjercicio; }
-        public void setDescansoEjercicio(Integer descansoEjercicio) { this.descansoEjercicio = descansoEjercicio; }
-        public String getObservaciones() { return observaciones; }
-        public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
-    }
-
-    // DTO para ejercicio simple
-    public static class EjercicioSimpleDTO {
-        private String idEjercicio;
-        private String nombre;
-        private Integer tiempo;
-        private Integer series;
-        private Integer repeticiones;
-        private Integer descanso;
-        private String equipoNecesario;
-        private String grupoMuscular;
-        private String instrucciones;
-
-        public EjercicioSimpleDTO() {}
-
-        public EjercicioSimpleDTO(String idEjercicio, String nombre, Integer tiempo, Integer series,
-                                  Integer repeticiones, Integer descanso, String equipoNecesario,
-                                  String grupoMuscular, String instrucciones) {
-            this.idEjercicio = idEjercicio;
-            this.nombre = nombre;
-            this.tiempo = tiempo;
-            this.series = series;
-            this.repeticiones = repeticiones;
-            this.descanso = descanso;
-            this.equipoNecesario = equipoNecesario;
-            this.grupoMuscular = grupoMuscular;
-            this.instrucciones = instrucciones;
-        }
-
-        // Getters y Setters
-        public String getIdEjercicio() { return idEjercicio; }
-        public void setIdEjercicio(String idEjercicio) { this.idEjercicio = idEjercicio; }
-        public String getNombre() { return nombre; }
-        public void setNombre(String nombre) { this.nombre = nombre; }
-        public Integer getTiempo() { return tiempo; }
-        public void setTiempo(Integer tiempo) { this.tiempo = tiempo; }
-        public Integer getSeries() { return series; }
-        public void setSeries(Integer series) { this.series = series; }
-        public Integer getRepeticiones() { return repeticiones; }
-        public void setRepeticiones(Integer repeticiones) { this.repeticiones = repeticiones; }
-        public Integer getDescanso() { return descanso; }
-        public void setDescanso(Integer descanso) { this.descanso = descanso; }
-        public String getEquipoNecesario() { return equipoNecesario; }
-        public void setEquipoNecesario(String equipoNecesario) { this.equipoNecesario = equipoNecesario; }
-        public String getGrupoMuscular() { return grupoMuscular; }
-        public void setGrupoMuscular(String grupoMuscular) { this.grupoMuscular = grupoMuscular; }
-        public String getInstrucciones() { return instrucciones; }
-        public void setInstrucciones(String instrucciones) { this.instrucciones = instrucciones; }
-    }
 }
