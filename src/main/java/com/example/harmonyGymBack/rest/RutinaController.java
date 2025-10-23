@@ -218,4 +218,93 @@ public class RutinaController {
             this.folioInstructor = folioInstructor;
         }
     }
+
+    // ==================== ENDPOINTS PARA GESTIÓN DE ESTATUS ====================
+
+    @PatchMapping("/{folioRutina}/estatus")
+    public ResponseEntity<?> cambiarEstatusRutina(
+            @PathVariable String folioRutina,
+            @RequestBody CambioEstatusRequest request) {
+
+        try {
+            RutinaEntity rutinaActualizada = rutinaService.cambiarEstatusRutina(folioRutina, request.getEstatus());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Estatus de la rutina actualizado exitosamente");
+            response.put("rutina", rutinaActualizada);
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PatchMapping("/{folioRutina}/activar")
+    public ResponseEntity<?> activarRutina(@PathVariable String folioRutina) {
+        try {
+            RutinaEntity rutinaActualizada = rutinaService.activarRutina(folioRutina);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Rutina activada exitosamente");
+            response.put("rutina", rutinaActualizada);
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PatchMapping("/{folioRutina}/inactivar")
+    public ResponseEntity<?> inactivarRutina(@PathVariable String folioRutina) {
+        try {
+            RutinaEntity rutinaActualizada = rutinaService.inactivarRutina(folioRutina);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Rutina inactivada exitosamente");
+            response.put("rutina", rutinaActualizada);
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @GetMapping("/estatus/{estatus}")
+    public ResponseEntity<List<RutinaEntity>> getRutinasByEstatus(@PathVariable String estatus) {
+        try {
+            List<RutinaEntity> rutinas = rutinaService.findByEstatus(estatus);
+            return ResponseEntity.ok(rutinas);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // Clase DTO para cambio de estatus
+    public static class CambioEstatusRequest {
+        private String estatus;
+
+        // Getters y Setters
+        public String getEstatus() {
+            return estatus;
+        }
+
+        public void setEstatus(String estatus) {
+            this.estatus = estatus;
+        }
+    }
 }
