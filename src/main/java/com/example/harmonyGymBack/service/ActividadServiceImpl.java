@@ -16,8 +16,70 @@ public class ActividadServiceImpl {
     @Autowired
     private ActividadRepository actividadRepository;
 
-    // Crear nueva actividad
+    // ==================== GENERACIÓN AUTOMÁTICA DE ID_ACTIVIDAD ====================
+
+    private String generarIdActividad() {
+        try {
+            System.out.println("🔍 Buscando último ID de actividad en la base de datos...");
+
+            List<Actividad> todasActividades = actividadRepository.findAll();
+
+            if (todasActividades.isEmpty()) {
+                System.out.println("✅ No hay actividades, empezando con ACT001");
+                return "ACT001";
+            }
+
+            String ultimoId = null;
+            int maxNumero = 0;
+
+            for (Actividad actividad : todasActividades) {
+                String idActividad = actividad.getIdActividad();
+                if (idActividad != null && idActividad.startsWith("ACT")) {
+                    try {
+                        String numeroStr = idActividad.substring(3);
+                        int numero = Integer.parseInt(numeroStr);
+                        if (numero > maxNumero) {
+                            maxNumero = numero;
+                            ultimoId = idActividad;
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("⚠️ ID de actividad con formato inválido: " + idActividad);
+                    }
+                }
+            }
+
+            if (ultimoId == null) {
+                System.out.println("✅ No se encontraron IDs válidos, empezando con ACT001");
+                return "ACT001";
+            }
+
+            int nuevoNumero = maxNumero + 1;
+            String nuevoId = String.format("ACT%03d", nuevoNumero);
+
+            System.out.println("📊 Último ID encontrado: " + ultimoId);
+            System.out.println("🎯 Nuevo ID generado: " + nuevoId);
+
+            return nuevoId;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error crítico al generar ID de actividad: " + e.getMessage());
+            e.printStackTrace();
+
+            long totalActividades = actividadRepository.count();
+            String idFallback = String.format("ACT%03d", totalActividades + 1);
+            System.out.println("🔄 Usando fallback: " + idFallback);
+            return idFallback;
+        }
+    }
+
+    // Crear nueva actividad (MODIFICADO para incluir generación automática de ID)
     public Actividad crearActividad(Actividad actividad) {
+        // Generar ID automáticamente
+        String nuevoId = generarIdActividad();
+        actividad.setIdActividad(nuevoId);
+
+        System.out.println("✅ ID asignado a la nueva actividad: " + nuevoId);
+
         // Validar que no haya conflicto de horarios
         List<Actividad> conflictos = actividadRepository.findConflictingActivities(
                 actividad.getLugar(),
@@ -40,6 +102,11 @@ public class ActividadServiceImpl {
         // Validar que la fecha no sea en el pasado
         if (actividad.getFechaActividad().isBefore(LocalDate.now())) {
             throw new RuntimeException("La fecha de la actividad no puede ser en el pasado");
+        }
+
+        // Establecer estatus por defecto si no viene
+        if (actividad.getEstatus() == null) {
+            actividad.setEstatus("Activa");
         }
 
         return actividadRepository.save(actividad);
@@ -94,7 +161,7 @@ public class ActividadServiceImpl {
     public Actividad actualizarActividad(String idActividad, Actividad actividadActualizada) {
         Actividad actividadExistente = obtenerActividadPorId(idActividad);
 
-        // Actualizar campos
+        // Actualizar campos (NO permitir cambiar el ID)
         if (actividadActualizada.getNombreActividad() != null) {
             actividadExistente.setNombreActividad(actividadActualizada.getNombreActividad());
         }

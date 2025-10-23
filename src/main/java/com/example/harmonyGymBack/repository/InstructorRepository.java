@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -24,7 +23,7 @@ public interface InstructorRepository extends JpaRepository<Instructor, String> 
     // Buscar por estatus y especialidad
     List<Instructor> findByEstatusAndEspecialidadContainingIgnoreCase(String estatus, String especialidad);
 
-    // Verificar si existe un instructor por folio
+    // Verificar si existe un instructor por folio - CORREGIDO
     boolean existsByFolioInstructor(String folioInstructor);
 
     // Buscar por nombre (case insensitive)
@@ -42,6 +41,7 @@ public interface InstructorRepository extends JpaRepository<Instructor, String> 
         """, nativeQuery = true)
     Optional<Object[]> findInstructorWithUsuario(@Param("folioInstructor") String folioInstructor);
 
+    // CORREGIDO: Cambiar instructorEntity por instructor
     @Query(value = "SELECT i.folio_instructor FROM instructor i ORDER BY i.folio_instructor DESC LIMIT 1", nativeQuery = true)
     String findUltimoFolioInstructor();
 

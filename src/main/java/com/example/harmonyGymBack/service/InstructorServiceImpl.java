@@ -6,22 +6,14 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class InstructorServiceImpl {
@@ -31,93 +23,6 @@ public class InstructorServiceImpl {
 
     @PersistenceContext
     private EntityManager entityManager;
-
-    // Directorio donde se guardarán las fotos
-    @Value("${app.upload.dir:uploads/instructores}")
-    private String uploadDir;
-
-    // ==================== MÉTODOS PARA MANEJO DE ARCHIVOS ====================
-
-    /**
-     * Guarda un archivo de foto en el sistema de archivos
-     */
-    private String guardarArchivo(MultipartFile archivo, String folioInstructor) throws IOException {
-        if (archivo == null || archivo.isEmpty()) {
-            return null;
-        }
-
-        // Crear directorio si no existe
-        Path uploadPath = Paths.get(uploadDir);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-
-        // Generar nombre único para el archivo
-        String extension = obtenerExtensionArchivo(archivo.getOriginalFilename());
-        String nombreArchivo = folioInstructor + "_" + UUID.randomUUID().toString() + "." + extension;
-
-        // Guardar archivo
-        Path filePath = uploadPath.resolve(nombreArchivo);
-        Files.copy(archivo.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-        return nombreArchivo;
-    }
-
-    /**
-     * Elimina un archivo de foto del sistema de archivos
-     */
-    private void eliminarArchivo(String nombreArchivo) throws IOException {
-        if (nombreArchivo != null && !nombreArchivo.trim().isEmpty()) {
-            Path filePath = Paths.get(uploadDir).resolve(nombreArchivo);
-            if (Files.exists(filePath)) {
-                Files.delete(filePath);
-            }
-        }
-    }
-
-    /**
-     * Obtiene la extensión de un archivo
-     */
-    private String obtenerExtensionArchivo(String nombreArchivo) {
-        if (nombreArchivo == null) {
-            return "jpg";
-        }
-        int lastDotIndex = nombreArchivo.lastIndexOf(".");
-        if (lastDotIndex > 0) {
-            return nombreArchivo.substring(lastDotIndex + 1).toLowerCase();
-        }
-        return "jpg";
-    }
-
-    /**
-     * Valida que el archivo sea una imagen válida
-     */
-    private void validarArchivo(MultipartFile archivo) {
-        if (archivo == null || archivo.isEmpty()) {
-            return; // No hay archivo, es opcional
-        }
-
-        // Validar tipo de archivo
-        String contentType = archivo.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new RuntimeException("El archivo debe ser una imagen válida");
-        }
-
-        // Validar tamaño (máximo 5MB)
-        long maxSize = 5 * 1024 * 1024; // 5MB
-        if (archivo.getSize() > maxSize) {
-            throw new RuntimeException("La imagen no debe superar los 5MB");
-        }
-
-        // Validar extensión
-        String nombreArchivo = archivo.getOriginalFilename();
-        if (nombreArchivo != null) {
-            String extension = obtenerExtensionArchivo(nombreArchivo);
-            if (!extension.matches("(jpg|jpeg|png|gif|webp)")) {
-                throw new RuntimeException("Solo se permiten imágenes JPG, PNG, GIF o WebP");
-            }
-        }
-    }
 
     // ==================== GENERACIÓN AUTOMÁTICA DE FOLIO ====================
 
@@ -146,9 +51,7 @@ public class InstructorServiceImpl {
                             ultimoFolio = folio;
                         }
                     } catch (NumberFormatException e) {
-
                         System.err.println("⚠️ Folio con formato inválido: " + folio);
-
                     }
                 }
             }
@@ -177,17 +80,14 @@ public class InstructorServiceImpl {
         }
     }
 
-    // ==================== CREAR NUEVO INSTRUCTOR CON FOTO ====================
+    // ==================== CREAR NUEVO INSTRUCTOR ====================
 
     @Transactional
-    public Instructor crearInstructorConFoto(String nombre, String app, String apm,
-                                             String horaEntrada, String horaSalida,
-                                             String especialidad, String fechaContratacion,
-                                             String estatus, MultipartFile foto) throws IOException {
-        System.out.println("🚀 Iniciando creación de instructor con foto...");
-
-        // Validar archivo si se proporciona
-        validarArchivo(foto);
+    public Instructor crearInstructor(String nombre, String app, String apm,
+                                      String horaEntrada, String horaSalida,
+                                      String especialidad, String fechaContratacion,
+                                      String estatus) {
+        System.out.println("🚀 Iniciando creación de instructorEntity...");
 
         // Generar folio
         String folioGenerado = generarFolioInstructor();
@@ -224,34 +124,22 @@ public class InstructorServiceImpl {
             instructor.setFechaContratacion(LocalDate.now());
         }
 
-        // Guardar foto si se proporciona
-        if (foto != null && !foto.isEmpty()) {
-            String nombreArchivoFoto = guardarArchivo(foto, folioGenerado);
-            instructor.setNombreArchivoFoto(nombreArchivoFoto);
-            System.out.println("📸 Foto guardada: " + nombreArchivoFoto);
-        }
-
-        // Guardar instructor en base de datos
+        // Guardar instructorEntity en base de datos
         Instructor instructorGuardado = instructorRepository.save(instructor);
         System.out.println("✅ Instructor creado exitosamente: " + folioGenerado);
 
         return instructorGuardado;
     }
 
-    // ==================== ACTUALIZAR INSTRUCTOR CON FOTO ====================
+    // ==================== ACTUALIZAR INSTRUCTOR ====================
 
     @Transactional
-    public Instructor actualizarInstructorConFoto(String folioInstructor, String nombre, String app, String apm,
-                                                  String horaEntrada, String horaSalida, String especialidad,
-                                                  String fechaContratacion, String estatus, MultipartFile foto,
-                                                  boolean eliminarFoto) throws IOException {
-        System.out.println("✏️ Actualizando instructor: " + folioInstructor);
-
+    public Instructor actualizarInstructor(String folioInstructor, String nombre, String app, String apm,
+                                           String horaEntrada, String horaSalida, String especialidad,
+                                           String fechaContratacion, String estatus) {
+        System.out.println("✏️ Actualizando instructorEntity: " + folioInstructor);
 
         Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
-
-        // Validar archivo si se proporciona nueva foto
-        validarArchivo(foto);
 
         // Actualizar campos básicos
         if (nombre != null) instructorExistente.setNombre(nombre);
@@ -281,25 +169,6 @@ public class InstructorServiceImpl {
             instructorExistente.setFechaContratacion(LocalDate.parse(fechaContratacion));
         }
 
-        // Manejo de la foto
-        if (eliminarFoto) {
-            // Eliminar foto existente
-            if (instructorExistente.getNombreArchivoFoto() != null) {
-                eliminarArchivo(instructorExistente.getNombreArchivoFoto());
-                instructorExistente.setNombreArchivoFoto(null);
-                System.out.println("🗑️ Foto eliminada");
-            }
-        } else if (foto != null && !foto.isEmpty()) {
-            // Eliminar foto anterior si existe
-            if (instructorExistente.getNombreArchivoFoto() != null) {
-                eliminarArchivo(instructorExistente.getNombreArchivoFoto());
-            }
-            // Guardar nueva foto
-            String nombreArchivoFoto = guardarArchivo(foto, folioInstructor);
-            instructorExistente.setNombreArchivoFoto(nombreArchivoFoto);
-            System.out.println("📸 Foto actualizada: " + nombreArchivoFoto);
-        }
-
         Instructor instructorActualizado = instructorRepository.save(instructorExistente);
         System.out.println("✅ Instructor actualizado: " + folioInstructor);
 
@@ -309,7 +178,7 @@ public class InstructorServiceImpl {
     // ==================== MÉTODOS ORIGINALES (para compatibilidad) ====================
 
     public Instructor crearInstructor(Instructor instructor) {
-        System.out.println("🚀 Iniciando creación de instructor...");
+        System.out.println("🚀 Iniciando creación de instructorEntity...");
 
         String folioGenerado = generarFolioInstructor();
         instructor.setFolioInstructor(folioGenerado);
@@ -349,8 +218,8 @@ public class InstructorServiceImpl {
     }
 
     public Instructor obtenerInstructorPorId(String folioInstructor) {
-        Optional<Instructor> instructor = instructorRepository.findByFolioInstructor(folioInstructor);
-        return instructor.orElseThrow(() -> new RuntimeException("Instructor no encontrado con folio: " + folioInstructor));
+        Optional<Instructor> instructorEntity = instructorRepository.findByFolioInstructor(folioInstructor);
+        return instructorEntity.orElseThrow(() -> new RuntimeException("Instructor no encontrado con folio: " + folioInstructor));
     }
 
     public List<Instructor> obtenerInstructoresFiltrados(String estatus, String especialidad) {
@@ -369,7 +238,7 @@ public class InstructorServiceImpl {
 
     @Transactional
     public Instructor actualizarInstructor(String folioInstructor, Instructor instructorActualizado) {
-        System.out.println("✏️ Actualizando instructor: " + folioInstructor);
+        System.out.println("✏️ Actualizando instructorEntity: " + folioInstructor);
 
         Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
 
@@ -406,9 +275,6 @@ public class InstructorServiceImpl {
         if (instructorActualizado.getEstatus() != null) {
             instructorExistente.setEstatus(instructorActualizado.getEstatus());
         }
-        if (instructorActualizado.getNombreArchivoFoto() != null) {
-            instructorExistente.setNombreArchivoFoto(instructorActualizado.getNombreArchivoFoto());
-        }
 
         Instructor instructorActualizadoDb = instructorRepository.save(instructorExistente);
         System.out.println("✅ Instructor actualizado: " + instructorActualizadoDb.getFolioInstructor());
@@ -440,7 +306,7 @@ public class InstructorServiceImpl {
     // ==================== ESTADÍSTICAS ====================
 
     public Map<String, Object> obtenerEstadisticasInstructor(String folioInstructor) {
-        // Verificar que el instructor existe
+        // Verificar que el instructorEntity existe
         if (!instructorRepository.existsByFolioInstructor(folioInstructor)) {
             throw new RuntimeException("Instructor no encontrado con folio: " + folioInstructor);
         }
@@ -513,36 +379,14 @@ public class InstructorServiceImpl {
         return instructorRepository.findByEspecialidadContainingIgnoreCase(especialidad);
     }
 
-    // ==================== ELIMINAR INSTRUCTOR (con foto) ====================
+    // ==================== ELIMINAR INSTRUCTOR ====================
 
     @Transactional
-    public void eliminarInstructorCompleto(String folioInstructor) throws IOException {
+    public void eliminarInstructorCompleto(String folioInstructor) {
         Instructor instructor = obtenerInstructorPorId(folioInstructor);
-
-        // Eliminar foto si existe
-        if (instructor.getNombreArchivoFoto() != null) {
-            eliminarArchivo(instructor.getNombreArchivoFoto());
-        }
 
         // Eliminar de la base de datos
         instructorRepository.delete(instructor);
         System.out.println("✅ Instructor eliminado completamente: " + folioInstructor);
-    }
-
-    // ==================== OBTENER FOTO ====================
-
-    public byte[] obtenerFotoInstructor(String folioInstructor) throws IOException {
-        Instructor instructor = obtenerInstructorPorId(folioInstructor);
-
-        if (instructor.getNombreArchivoFoto() == null) {
-            return null;
-        }
-
-        Path filePath = Paths.get(uploadDir).resolve(instructor.getNombreArchivoFoto());
-        if (!Files.exists(filePath)) {
-            return null;
-        }
-
-        return Files.readAllBytes(filePath);
     }
 }

@@ -3,6 +3,8 @@ package com.example.harmonyGymBack.model;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "CLIENTE")
@@ -31,6 +33,8 @@ public class Cliente {
 
     @Column(name = "Estatus")
     private String estatus = "Activo";
+
+
 
     // NUEVO CAMPO: Nombre del archivo de foto
     @Column(name = "Nombre_Archivo_Foto", length = 255)
@@ -64,6 +68,7 @@ public class Cliente {
     }
 
     // Getters y Setters
+
     public String getFolioCliente() { return folioCliente; }
     public void setFolioCliente(String folioCliente) { this.folioCliente = folioCliente; }
 
