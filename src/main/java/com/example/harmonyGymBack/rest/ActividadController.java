@@ -266,4 +266,23 @@ public class ActividadController {
             return new ResponseEntity<>(false, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/verificar-conflicto-excluyendo")
+    public ResponseEntity<Boolean> verificarConflictoHorarioExcluyendo(
+            @RequestParam String lugar,
+            @RequestParam String fecha,
+            @RequestParam String horaInicio,
+            @RequestParam String horaFin,
+            @RequestParam String excludeId) {
+        try {
+            LocalDate fechaActividad = LocalDate.parse(fecha);
+            LocalTime inicio = LocalTime.parse(horaInicio);
+            LocalTime fin = LocalTime.parse(horaFin);
+
+            boolean tieneConflicto = actividadService.tieneConflictoHorario(lugar, fechaActividad, inicio, fin, excludeId);
+            return new ResponseEntity<>(tieneConflicto, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(false, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }
