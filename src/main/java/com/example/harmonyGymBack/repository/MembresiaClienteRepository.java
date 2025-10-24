@@ -20,8 +20,11 @@ public interface MembresiaClienteRepository extends JpaRepository<MembresiaClien
     // Buscar membresía activa de un cliente
     Optional<MembresiaCliente> findByClienteFolioClienteAndEstatus(String folioCliente, String estatus);
 
-    // Buscar todas las membresías activas
+    // Buscar todas las membresías por estatus
     List<MembresiaCliente> findByEstatus(String estatus);
+
+    // Contar membresías por estatus (MÉTODO NUEVO AGREGADO)
+    long countByEstatus(String estatus);
 
     // Buscar membresías que expiran en una fecha específica
     List<MembresiaCliente> findByFechaFin(LocalDate fechaFin);

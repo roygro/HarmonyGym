@@ -1,6 +1,5 @@
-package com.example.harmonyGymBack.controller;
+package com.example.harmonyGymBack.rest;
 
-import com.example.harmonyGymBack.dto.PagoDTO;
 import com.example.harmonyGymBack.model.Pago;
 import com.example.harmonyGymBack.service.PagoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,22 +16,22 @@ public class PagoController {
     @Autowired
     private PagoService pagoService;
 
-    // POST - Crear nuevo pago
+    // POST - Crear nuevo pago (SIN DTO)
     @PostMapping
-    public ResponseEntity<?> crearPago(@RequestBody PagoDTO pagoDTO) {
+    public ResponseEntity<?> crearPago(@RequestBody Pago pago) {
         try {
             // Validaciones básicas
-            if (pagoDTO.getFolioCliente() == null || pagoDTO.getFolioCliente().trim().isEmpty()) {
+            if (pago.getFolioCliente() == null || pago.getFolioCliente().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("El folio del cliente es requerido");
             }
-            if (pagoDTO.getCodigoProducto() == null || pagoDTO.getCodigoProducto().trim().isEmpty()) {
+            if (pago.getCodigoProducto() == null || pago.getCodigoProducto().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("El código de producto es requerido");
             }
-            if (pagoDTO.getTotal() == null || pagoDTO.getTotal() <= 0) {
+            if (pago.getTotal() == null || pago.getTotal() <= 0) {
                 return ResponseEntity.badRequest().body("El total debe ser mayor a 0");
             }
 
-            Pago nuevoPago = pagoService.crearPago(pagoDTO);
+            Pago nuevoPago = pagoService.crearPago(pago);
             return ResponseEntity.ok(nuevoPago);
 
         } catch (Exception e) {
@@ -114,7 +113,7 @@ public class PagoController {
         }
     }
 
-    // GET - Obtener pago por ID - CORREGIDO
+    // GET - Obtener pago por ID
     @GetMapping("/{id}")
     public ResponseEntity<?> obtenerPagoPorId(@PathVariable Integer id) {
         try {
