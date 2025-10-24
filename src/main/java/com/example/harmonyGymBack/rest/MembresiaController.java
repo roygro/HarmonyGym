@@ -1,4 +1,4 @@
-package com.example.harmonyGymBack.controller;
+package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.Membresia;
 import com.example.harmonyGymBack.model.TipoMembresia;

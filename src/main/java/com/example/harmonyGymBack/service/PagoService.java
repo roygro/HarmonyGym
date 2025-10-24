@@ -1,6 +1,5 @@
 package com.example.harmonyGymBack.service;
 
-import com.example.harmonyGymBack.dto.PagoDTO;
 import com.example.harmonyGymBack.model.Pago;
 import com.example.harmonyGymBack.repository.PagoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,16 +17,15 @@ public class PagoService {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // Crear un nuevo pago
-    public Pago crearPago(PagoDTO pagoDTO) {
-        Pago pago = new Pago();
-        pago.setIdRecepcionista(pagoDTO.getIdRecepcionista());
-        pago.setCodigoProducto(pagoDTO.getCodigoProducto());
-        pago.setCantidad(pagoDTO.getCantidad() != null ? pagoDTO.getCantidad() : 1);
-        pago.setPrecioUnitario(pagoDTO.getPrecioUnitario());
-        pago.setTotal(pagoDTO.getTotal());
-        pago.setFolioCliente(pagoDTO.getFolioCliente());
-
+    // Crear un nuevo pago (SIN DTO)
+    public Pago crearPago(Pago pago) {
+        // Asegurar valores por defecto
+        if (pago.getCantidad() == null) {
+            pago.setCantidad(1);
+        }
+        if (pago.getFechaVenta() == null) {
+            pago.setFechaVenta(LocalDateTime.now());
+        }
         return pagoRepository.save(pago);
     }
 
@@ -46,6 +44,11 @@ public class PagoService {
         return pagoRepository.findByIdRecepcionista(idRecepcionista);
     }
 
+    // Obtener pago por ID
+    public Pago obtenerPagoPorId(Integer id) {
+        return pagoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pago no encontrado con ID: " + id));
+    }
 
     // Obtener estadísticas del día
     public EstadisticasDiaDTO obtenerEstadisticasDelDia() {
@@ -85,12 +88,4 @@ public class PagoService {
         public Long getCantidadVentas() { return cantidadVentas; }
         public void setCantidadVentas(Long cantidadVentas) { this.cantidadVentas = cantidadVentas; }
     }
-
-    // Agrega este método en PagoService.java
-    public Pago obtenerPagoPorId(Integer id) {
-        return pagoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pago no encontrado con ID: " + id));
-    }
-
-
 }
