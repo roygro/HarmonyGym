@@ -1,7 +1,11 @@
 package com.example.harmonyGymBack.service;
 
 import com.example.harmonyGymBack.model.Cliente;
+import com.example.harmonyGymBack.model.Usuario;
+import com.example.harmonyGymBack.model.AuthResponse;
+import com.example.harmonyGymBack.model.RegisterRequest;
 import com.example.harmonyGymBack.repository.ClienteRepository;
+import com.example.harmonyGymBack.repository.UsuarioRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
@@ -25,6 +29,12 @@ import java.util.UUID;
 
 @Service
 public class ClienteServiceImpl {
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private AuthService authService;
 
     @Autowired
     private ClienteRepository clienteRepository;
@@ -97,6 +107,156 @@ public class ClienteServiceImpl {
             if (!extension.matches("(jpg|jpeg|png|gif|webp)")) {
                 throw new RuntimeException("Solo se permiten imágenes JPG, PNG, GIF o WebP");
             }
+        }
+    }
+
+    // ==================== MÉTODOS PARA CREACIÓN DE USUARIO AUTOMÁTICO ====================
+
+    private void crearUsuarioParaCliente(Cliente cliente) {
+        try {
+            System.out.println("👤 Creando usuario automático para cliente: " + cliente.getFolioCliente());
+
+            // Verificar si ya existe un usuario para este cliente
+            Optional<Usuario> usuarioExistente = authService.obtenerUsuarioPorIdPersona(cliente.getFolioCliente());
+            if (usuarioExistente.isPresent()) {
+                System.out.println("ℹ️ Ya existe un usuario para este cliente: " + cliente.getFolioCliente());
+                return;
+            }
+
+            // Generar username único basado en el email o teléfono
+            String username = generarUsernameParaCliente(cliente);
+
+            // Generar password temporal
+            String passwordTemporal = generarPasswordTemporal();
+
+            // Crear request de registro
+            RegisterRequest registerRequest = new RegisterRequest();
+            registerRequest.setUsername(username);
+            registerRequest.setPassword(passwordTemporal);
+            registerRequest.setTipoUsuario("Cliente");
+            registerRequest.setIdPersona(cliente.getFolioCliente());
+
+            // Registrar el usuario
+            AuthResponse authResponse = authService.registrarUsuario(registerRequest);
+
+            if (authResponse.isSuccess()) {
+                System.out.println("✅ Usuario creado exitosamente:");
+                System.out.println("   📧 Username: " + username);
+                System.out.println("   🔑 Password temporal: " + passwordTemporal);
+                System.out.println("   👤 ID Usuario: " + authResponse.getIdUsuario());
+
+                // Aquí podrías enviar las credenciales por email al cliente
+                // enviarCredencialesPorEmail(cliente, username, passwordTemporal);
+
+            } else {
+                throw new RuntimeException("Error al crear usuario: " + authResponse.getMessage());
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error al crear usuario automático: " + e.getMessage());
+            throw new RuntimeException("No se pudo crear el usuario automáticamente: " + e.getMessage());
+        }
+    }
+
+    private String generarUsernameParaCliente(Cliente cliente) {
+        String usernameBase = "";
+
+        // Intentar usar el email como base
+        if (cliente.getEmail() != null && !cliente.getEmail().trim().isEmpty()) {
+            usernameBase = cliente.getEmail().split("@")[0];
+        }
+        // Si no hay email, usar el nombre
+        else if (cliente.getNombre() != null && !cliente.getNombre().trim().isEmpty()) {
+            // Convertir nombre a formato username (sin espacios, minúsculas)
+            usernameBase = cliente.getNombre().toLowerCase()
+                    .replaceAll("\\s+", ".")
+                    .replaceAll("[^a-zA-Z0-9.]", "");
+        }
+        // Como último recurso, usar el folio del cliente
+        else {
+            usernameBase = "user" + cliente.getFolioCliente().toLowerCase();
+        }
+
+        // Verificar disponibilidad y generar username único
+        return generarUsernameUnico(usernameBase);
+    }
+
+    private String generarUsernameUnico(String base) {
+        String username = base;
+        int counter = 1;
+
+        // Verificar disponibilidad usando el AuthService
+        Map<String, Object> disponibilidad = authService.verificarDisponibilidadUsername(username);
+        boolean disponible = (Boolean) disponibilidad.get("disponible");
+
+        while (!disponible) {
+            username = base + counter;
+            disponibilidad = authService.verificarDisponibilidadUsername(username);
+            disponible = (Boolean) disponibilidad.get("disponible");
+            counter++;
+
+            // Prevenir loop infinito
+            if (counter > 100) {
+                throw new RuntimeException("No se pudo generar un username único después de 100 intentos");
+            }
+        }
+
+        return username;
+    }
+
+    private String generarPasswordTemporal() {
+        // Generar una contraseña temporal de 8 caracteres
+        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder password = new StringBuilder();
+
+        // Asegurar que tenga al menos una mayúscula, una minúscula y un número
+        password.append(caracteres.charAt((int) (Math.random() * 26))); // Mayúscula
+        password.append(caracteres.charAt(26 + (int) (Math.random() * 26))); // Minúscula
+        password.append(caracteres.charAt(52 + (int) (Math.random() * 10))); // Número
+
+        // Completar los 8 caracteres
+        for (int i = 3; i < 8; i++) {
+            int index = (int) (Math.random() * caracteres.length());
+            password.append(caracteres.charAt(index));
+        }
+
+        // Mezclar los caracteres
+        char[] passwordArray = password.toString().toCharArray();
+        for (int i = passwordArray.length - 1; i > 0; i--) {
+            int j = (int) (Math.random() * (i + 1));
+            char temp = passwordArray[i];
+            passwordArray[i] = passwordArray[j];
+            passwordArray[j] = temp;
+        }
+
+        return new String(passwordArray);
+    }
+
+    private void sincronizarEstatusUsuario(String folioCliente, String estatusCliente) {
+        try {
+            Optional<Usuario> usuarioOpt = authService.obtenerUsuarioPorIdPersona(folioCliente);
+
+            if (usuarioOpt.isPresent()) {
+                Usuario usuario = usuarioOpt.get();
+                String estatusUsuario = "Activo".equals(estatusCliente) ? "Activo" : "Inactivo";
+
+                if (!estatusUsuario.equals(usuario.getEstatus())) {
+                    usuario.setEstatus(estatusUsuario);
+                    // Si se activa el cliente, resetear intentos de login
+                    if ("Activo".equals(estatusUsuario)) {
+                        usuario.setIntentosLogin(0);
+                        usuario.setFechaBloqueo(null);
+                    }
+
+                    // Guardar cambios en el usuario
+                    usuarioRepository.save(usuario);
+
+                    System.out.println("✅ Estatus de usuario actualizado: " + usuario.getUsername() + " -> " + estatusUsuario);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error al sincronizar estatus de usuario: " + e.getMessage());
+            throw new RuntimeException("Error al sincronizar estatus de usuario");
         }
     }
 
@@ -200,6 +360,15 @@ public class ClienteServiceImpl {
         Cliente clienteGuardado = clienteRepository.save(cliente);
         System.out.println("✅ Cliente creado exitosamente: " + folioGenerado);
 
+        // ✅ NUEVO: Crear usuario automáticamente para el cliente
+        try {
+            crearUsuarioParaCliente(clienteGuardado);
+            System.out.println("✅ Usuario creado automáticamente para el cliente: " + folioGenerado);
+        } catch (Exception e) {
+            System.err.println("⚠ Advertencia: No se pudo crear el usuario para el cliente: " + e.getMessage());
+            // No lanzamos excepción para no revertir la creación del cliente
+        }
+
         return clienteGuardado;
     }
 
@@ -288,6 +457,14 @@ public class ClienteServiceImpl {
         Cliente clienteGuardado = clienteRepository.save(cliente);
         System.out.println("✅ Cliente guardado exitosamente: " + clienteGuardado.getFolioCliente());
 
+        // ✅ Crear usuario automáticamente
+        try {
+            crearUsuarioParaCliente(clienteGuardado);
+            System.out.println("✅ Usuario creado automáticamente para el cliente: " + folioGenerado);
+        } catch (Exception e) {
+            System.err.println("⚠ Advertencia: No se pudo crear el usuario para el cliente: " + e.getMessage());
+        }
+
         return clienteGuardado;
     }
 
@@ -365,7 +542,17 @@ public class ClienteServiceImpl {
     public Cliente cambiarEstatusCliente(String folioCliente, String nuevoEstatus) {
         Cliente cliente = obtenerClientePorId(folioCliente);
         cliente.setEstatus(nuevoEstatus);
-        return clienteRepository.save(cliente);
+
+        Cliente clienteActualizado = clienteRepository.save(cliente);
+
+        // ✅ Sincronizar estatus con el usuario
+        try {
+            sincronizarEstatusUsuario(folioCliente, nuevoEstatus);
+        } catch (Exception e) {
+            System.err.println("⚠ Advertencia: No se pudo sincronizar el estatus del usuario: " + e.getMessage());
+        }
+
+        return clienteActualizado;
     }
 
     public Cliente desactivarCliente(String folioCliente) {
@@ -377,7 +564,16 @@ public class ClienteServiceImpl {
     }
 
     public void eliminarCliente(String folioCliente) {
-        desactivarCliente(folioCliente);
+        // Primero desactivar el cliente
+        Cliente clienteDesactivado = cambiarEstatusCliente(folioCliente, "Inactivo");
+
+        // Luego desactivar el usuario asociado
+        try {
+            sincronizarEstatusUsuario(folioCliente, "Inactivo");
+            System.out.println("✅ Cliente y usuario desactivados: " + folioCliente);
+        } catch (Exception e) {
+            System.err.println("⚠ Cliente desactivado pero no se pudo desactivar el usuario: " + e.getMessage());
+        }
     }
 
     // ==================== ESTADÍSTICAS ====================
