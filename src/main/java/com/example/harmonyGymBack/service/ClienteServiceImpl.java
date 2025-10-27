@@ -39,6 +39,9 @@ public class ClienteServiceImpl {
     @Autowired
     private ClienteRepository clienteRepository;
 
+    @Autowired
+    private EmailService emailService;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -145,8 +148,23 @@ public class ClienteServiceImpl {
                 System.out.println("   🔑 Password temporal: " + passwordTemporal);
                 System.out.println("   👤 ID Usuario: " + authResponse.getIdUsuario());
 
-                // Aquí podrías enviar las credenciales por email al cliente
-                // enviarCredencialesPorEmail(cliente, username, passwordTemporal);
+                // ✅ ENVIAR CREDENCIALES POR EMAIL
+                if (cliente.getEmail() != null && !cliente.getEmail().trim().isEmpty()) {
+                    try {
+                        emailService.enviarCredencialesCliente(
+                                cliente.getEmail(),
+                                cliente.getNombre(),
+                                username,
+                                passwordTemporal
+                        );
+                        System.out.println("✅ Credenciales enviadas por email a: " + cliente.getEmail());
+                    } catch (Exception e) {
+                        System.err.println("⚠️ No se pudieron enviar las credenciales por email: " + e.getMessage());
+                        // No revertimos la creación por fallo en el email
+                    }
+                } else {
+                    System.out.println("⚠️ Cliente no tiene email, no se enviaron credenciales");
+                }
 
             } else {
                 throw new RuntimeException("Error al crear usuario: " + authResponse.getMessage());
@@ -161,18 +179,25 @@ public class ClienteServiceImpl {
     private String generarUsernameParaCliente(Cliente cliente) {
         String usernameBase = "";
 
-        // Intentar usar el email como base
+        // Prioridad 1: Usar el email como base
         if (cliente.getEmail() != null && !cliente.getEmail().trim().isEmpty()) {
             usernameBase = cliente.getEmail().split("@")[0];
         }
-        // Si no hay email, usar el nombre
+        // Prioridad 2: Usar el nombre + apellido
         else if (cliente.getNombre() != null && !cliente.getNombre().trim().isEmpty()) {
-            // Convertir nombre a formato username (sin espacios, minúsculas)
-            usernameBase = cliente.getNombre().toLowerCase()
-                    .replaceAll("\\s+", ".")
-                    .replaceAll("[^a-zA-Z0-9.]", "");
+            String[] nombrePartes = cliente.getNombre().split("\\s+");
+            if (nombrePartes.length >= 2) {
+                // Usar primera letra del nombre + apellido completo
+                usernameBase = nombrePartes[0].toLowerCase().charAt(0) +
+                        nombrePartes[nombrePartes.length - 1].toLowerCase();
+            } else {
+                // Si solo tiene un nombre, usarlo completo
+                usernameBase = cliente.getNombre().toLowerCase();
+            }
+            // Limpiar caracteres especiales
+            usernameBase = usernameBase.replaceAll("[^a-zA-Z0-9]", "");
         }
-        // Como último recurso, usar el folio del cliente
+        // Prioridad 3: Usar el folio del cliente
         else {
             usernameBase = "user" + cliente.getFolioCliente().toLowerCase();
         }
@@ -324,6 +349,11 @@ public class ClienteServiceImpl {
                                        MultipartFile foto) throws IOException {
         System.out.println("🚀 Iniciando creación de cliente con foto...");
 
+        // ✅ VALIDAR QUE EL EMAIL ES OBLIGATORIO
+        if (email == null || email.trim().isEmpty()) {
+            throw new RuntimeException("El email es obligatorio para crear las credenciales de acceso");
+        }
+
         validarArchivo(foto);
 
         String folioGenerado = generarFolioCliente();
@@ -332,7 +362,7 @@ public class ClienteServiceImpl {
         cliente.setFolioCliente(folioGenerado);
         cliente.setNombre(nombre);
         cliente.setTelefono(telefono);
-        cliente.setEmail(email);
+        cliente.setEmail(email); // Email es obligatorio
         cliente.setGenero(genero);
         cliente.setEstatus(estatus != null ? estatus : "Activo");
         cliente.setFechaRegistro(LocalDateTime.now());
@@ -348,7 +378,7 @@ public class ClienteServiceImpl {
         }
 
         // Validar email único
-        if (cliente.getEmail() != null && clienteRepository.findByEmail(cliente.getEmail()).isPresent()) {
+        if (clienteRepository.findByEmail(cliente.getEmail()).isPresent()) {
             throw new RuntimeException("El email ya está registrado por otro cliente");
         }
 
@@ -360,7 +390,7 @@ public class ClienteServiceImpl {
         Cliente clienteGuardado = clienteRepository.save(cliente);
         System.out.println("✅ Cliente creado exitosamente: " + folioGenerado);
 
-        // ✅ NUEVO: Crear usuario automáticamente para el cliente
+        // ✅ Crear usuario automáticamente para el cliente
         try {
             crearUsuarioParaCliente(clienteGuardado);
             System.out.println("✅ Usuario creado automáticamente para el cliente: " + folioGenerado);
@@ -432,6 +462,11 @@ public class ClienteServiceImpl {
     public Cliente crearCliente(Cliente cliente) {
         System.out.println("🚀 Iniciando creación de cliente...");
 
+        // ✅ VALIDAR QUE EL EMAIL ES OBLIGATORIO
+        if (cliente.getEmail() == null || cliente.getEmail().trim().isEmpty()) {
+            throw new RuntimeException("El email es obligatorio para crear las credenciales de acceso");
+        }
+
         String folioGenerado = generarFolioCliente();
         cliente.setFolioCliente(folioGenerado);
 
@@ -446,7 +481,7 @@ public class ClienteServiceImpl {
         }
 
         // Validaciones de unicidad
-        if (cliente.getEmail() != null && clienteRepository.findByEmail(cliente.getEmail()).isPresent()) {
+        if (clienteRepository.findByEmail(cliente.getEmail()).isPresent()) {
             throw new RuntimeException("El email ya está registrado");
         }
 
