@@ -15,7 +15,7 @@ public class Pago {
     @Column(name = "id_recepcionista", nullable = false, length = 50)
     private String idRecepcionista;
 
-    @Column(name = "codigo_producto", nullable = false, length = 50)
+    @Column(name = "codigo_producto", nullable = true, length = 50)
     private String codigoProducto;
 
     @Column(name = "fecha_venta", nullable = false)
@@ -32,6 +32,13 @@ public class Pago {
 
     @Column(name = "folio_cliente", nullable = false, length = 50)
     private String folioCliente;
+
+    @Column(name = "tipo_pago", nullable = false)
+    private String tipoPago;
+
+    @Column(name = "id_membresia", nullable = true)
+    private String idMembresia;
+
 
     // Constructores
     public Pago() {
@@ -114,6 +121,23 @@ public class Pago {
 
     public void setFolioCliente(String folioCliente) {
         this.folioCliente = folioCliente;
+    }
+
+    // Agregar getters y setters
+    public String getTipoPago() {
+        return tipoPago;
+    }
+
+    public void setTipoPago(String tipoPago) {
+        this.tipoPago = tipoPago;
+    }
+
+    public String getIdMembresia() {
+        return idMembresia;
+    }
+
+    public void setIdMembresia(String idMembresia) {
+        this.idMembresia = idMembresia;
     }
 
     // Método toString para debugging
