@@ -66,31 +66,71 @@ public class MembresiaClienteService {
 
     // ==================== RENOVAR MEMBRESÍA ====================
 
+    // ==================== RENOVAR MEMBRESÍA ====================
+
     public MembresiaCliente renovarMembresia(Long idMembresiaCliente) {
         System.out.println("🔄 Renovando membresía: " + idMembresiaCliente);
 
         MembresiaCliente membresiaActual = membresiaClienteRepository.findById(idMembresiaCliente)
                 .orElseThrow(() -> new RuntimeException("Membresía no encontrada: " + idMembresiaCliente));
 
-        if (!"Activa".equals(membresiaActual.getEstatus())) {
-            throw new RuntimeException("Solo se pueden renovar membresías activas");
+        String folioCliente = membresiaActual.getCliente().getFolioCliente();
+        String estatusActual = membresiaActual.getEstatus();
+
+        System.out.println("📊 Estatus actual: " + estatusActual + ", Cliente: " + folioCliente);
+
+        // Verificar si el cliente ya tiene otra membresía activa (excluyendo esta)
+        boolean tieneOtraMembresiaActiva = membresiaClienteRepository
+                .existsByClienteFolioClienteAndEstatusAndIdMembresiaClienteNot(
+                        folioCliente, "Activa", idMembresiaCliente);
+
+        if (tieneOtraMembresiaActiva) {
+            throw new RuntimeException("El cliente ya tiene otra membresía activa. Cancele la actual antes de renovar.");
         }
 
-        // Marcar la membresía actual como inactiva
-        membresiaActual.setEstatus("Inactiva");
+        // Lógica según el estatus actual
+        switch (estatusActual) {
+            case "Activa":
+                System.out.println("🔵 Renovando membresía ACTIVA");
+                // Marcar la membresía actual como inactiva y crear nueva
+                membresiaActual.setEstatus("Inactiva");
+                membresiaClienteRepository.save(membresiaActual);
 
-        // Crear nueva membresía comenzando al día siguiente de la fecha fin
-        LocalDate nuevaFechaInicio = membresiaActual.getFechaFin().plusDays(1);
-        MembresiaCliente nuevaMembresia = new MembresiaCliente(
-                membresiaActual.getCliente(),
-                membresiaActual.getMembresia(),
-                nuevaFechaInicio
-        );
+                // Crear nueva membresía comenzando al día siguiente de la fecha fin
+                LocalDate nuevaFechaInicio = membresiaActual.getFechaFin().plusDays(1);
+                MembresiaCliente nuevaMembresia = new MembresiaCliente(
+                        membresiaActual.getCliente(),
+                        membresiaActual.getMembresia(),
+                        nuevaFechaInicio
+                );
+                return membresiaClienteRepository.save(nuevaMembresia);
 
-        MembresiaCliente membresiaRenovada = membresiaClienteRepository.save(nuevaMembresia);
-        System.out.println("✅ Membresía renovada exitosamente: " + membresiaRenovada.getIdMembresiaCliente());
+            case "Expirada":
+            case "Cancelada":
+                System.out.println("🟡 Reactivando membresía " + estatusActual);
+                // Crear una nueva membresía basada en la existente (comenzando hoy)
+                MembresiaCliente membresiaReactivada = new MembresiaCliente(
+                        membresiaActual.getCliente(),
+                        membresiaActual.getMembresia(),
+                        LocalDate.now() // Comenzar hoy
+                );
+                return membresiaClienteRepository.save(membresiaReactivada);
 
-        return membresiaRenovada;
+            case "Inactiva":
+                System.out.println("🟠 Reactivando membresía INACTIVA");
+                // Reactivar la membresía existente
+                membresiaActual.setEstatus("Activa");
+                // Si la fecha fin ya pasó, extenderla
+                if (membresiaActual.getFechaFin().isBefore(LocalDate.now())) {
+                    LocalDate nuevaFechaFin = LocalDate.now().plusDays(membresiaActual.getMembresia().getDuracion());
+                    membresiaActual.setFechaFin(nuevaFechaFin);
+                    System.out.println("📅 Extendiendo fecha fin a: " + nuevaFechaFin);
+                }
+                return membresiaClienteRepository.save(membresiaActual);
+
+            default:
+                throw new RuntimeException("No se puede renovar una membresía con estatus: " + estatusActual);
+        }
     }
 
     // ==================== CANCELAR MEMBRESÍA ====================
@@ -230,5 +270,9 @@ public class MembresiaClienteService {
         System.out.println("✅ Membresía cambiada exitosamente: " + membresiaCambiada.getIdMembresiaCliente());
 
         return membresiaCambiada;
+    }
+
+    public List<MembresiaCliente> obtenerTodasLasMembresias() {
+        return membresiaClienteRepository.findAll(); // O el método equivalente de tu repository
     }
 }
