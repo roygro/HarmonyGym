@@ -26,6 +26,7 @@ public class InstructorController {
             @RequestParam("nombre") String nombre,
             @RequestParam(value = "app", required = false) String app,
             @RequestParam(value = "apm", required = false) String apm,
+            @RequestParam(value = "email", required = false) String email,
             @RequestParam(value = "horaEntrada", required = false) String horaEntrada,
             @RequestParam(value = "horaSalida", required = false) String horaSalida,
             @RequestParam(value = "especialidad", required = false) String especialidad,
@@ -34,7 +35,7 @@ public class InstructorController {
 
         try {
             Instructor instructor = instructorService.crearInstructor(
-                    nombre, app, apm, horaEntrada, horaSalida, especialidad,
+                    nombre, app, apm, email, horaEntrada, horaSalida, especialidad,
                     fechaContratacion, estatus);
 
             Map<String, Object> response = new HashMap<>();
@@ -60,6 +61,7 @@ public class InstructorController {
             @RequestParam(value = "nombre", required = false) String nombre,
             @RequestParam(value = "app", required = false) String app,
             @RequestParam(value = "apm", required = false) String apm,
+            @RequestParam(value = "email", required = false) String email,
             @RequestParam(value = "horaEntrada", required = false) String horaEntrada,
             @RequestParam(value = "horaSalida", required = false) String horaSalida,
             @RequestParam(value = "especialidad", required = false) String especialidad,
@@ -68,7 +70,7 @@ public class InstructorController {
 
         try {
             Instructor instructor = instructorService.actualizarInstructor(
-                    folioInstructor, nombre, app, apm, horaEntrada, horaSalida,
+                    folioInstructor, nombre, app, apm, email, horaEntrada, horaSalida,
                     especialidad, fechaContratacion, estatus);
 
             Map<String, Object> response = new HashMap<>();
@@ -158,6 +160,22 @@ public class InstructorController {
         }
     }
 
+    /* NUEVO: Obtener instructor por email
+    @GetMapping("/email/{email}")
+    public ResponseEntity<?> obtenerInstructorPorEmail(@PathVariable String email) {
+        try {
+            Instructor instructor = instructorService.obtenerInstructorPorEmail(email);
+            return ResponseEntity.ok(instructor);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }*/
+
     @GetMapping("/filtros")
     public ResponseEntity<List<Instructor>> obtenerInstructoresFiltrados(
             @RequestParam(value = "estatus", required = false) String estatus,
@@ -228,16 +246,6 @@ public class InstructorController {
         }
     }
 
-    @GetMapping("/buscar")
-    public ResponseEntity<List<Instructor>> buscarInstructoresPorNombre(@RequestParam String nombre) {
-        try {
-            List<Instructor> instructores = instructorService.buscarInstructoresPorNombre(nombre);
-            return ResponseEntity.ok(instructores);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
     @GetMapping("/activos")
     public ResponseEntity<List<Instructor>> obtenerInstructoresActivos() {
         try {
@@ -248,46 +256,58 @@ public class InstructorController {
         }
     }
 
-    // ==================== ENDPOINTS ADICIONALES ====================
-
-    @GetMapping("/conteo/activos")
-    public ResponseEntity<?> contarInstructoresActivos() {
+    @GetMapping("/buscar")
+    public ResponseEntity<List<Instructor>> buscarInstructoresPorNombre(
+            @RequestParam("nombre") String nombre) {
         try {
-            Long totalActivos = instructorService.contarInstructoresActivos();
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("totalInstructoresActivos", totalActivos);
-
-            return ResponseEntity.ok(response);
+            List<Instructor> instructores = instructorService.buscarInstructoresPorNombre(nombre);
+            return ResponseEntity.ok(instructores);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/verificar/{folioInstructor}")
-    public ResponseEntity<?> verificarInstructor(@PathVariable String folioInstructor) {
+    // NUEVO: Buscar instructores por email
+    @GetMapping("/buscar-email")
+    public ResponseEntity<List<Instructor>> buscarInstructoresPorEmail(
+            @RequestParam("email") String email) {
         try {
-            boolean existe = instructorService.existeInstructor(folioInstructor);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("existe", existe);
-
-            return ResponseEntity.ok(response);
+            List<Instructor> instructores = instructorService.buscarInstructoresPorEmail(email);
+            return ResponseEntity.ok(instructores);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @DeleteMapping("/completo/{folioInstructor}")
+    @GetMapping("/contar-activos")
+    public ResponseEntity<Long> contarInstructoresActivos() {
+        try {
+            Long total = instructorService.contarInstructoresActivos();
+            return ResponseEntity.ok(total);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/especialidad/{especialidad}")
+    public ResponseEntity<List<Instructor>> obtenerInstructoresPorEspecialidad(
+            @PathVariable String especialidad) {
+        try {
+            List<Instructor> instructores = instructorService.obtenerInstructoresPorEspecialidad(especialidad);
+            return ResponseEntity.ok(instructores);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @DeleteMapping("/eliminar/{folioInstructor}")
     public ResponseEntity<?> eliminarInstructorCompleto(@PathVariable String folioInstructor) {
         try {
             instructorService.eliminarInstructorCompleto(folioInstructor);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Instructor eliminado completamente del sistema");
+            response.put("message", "Instructor eliminado completamente");
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -298,5 +318,68 @@ public class InstructorController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    // NUEVO: Verificar si existe instructor por email
+    @GetMapping("/existe-email/{email}")
+    public ResponseEntity<Boolean> existeInstructorPorEmail(@PathVariable String email) {
+        try {
+            boolean existe = instructorService.existeInstructorPorEmail(email);
+            return ResponseEntity.ok(existe);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // ==================== CREAR INSTRUCTOR CON EMAIL Y CREDENCIALES ====================
+
+    @PostMapping("/crear-con-email")
+    public ResponseEntity<?> crearInstructorConEmail(@RequestBody CrearInstructorConEmailRequest request) {
+        try {
+            Instructor instructorCreado = instructorService.crearInstructorConEmail(
+                    request.getInstructor(),
+                    request.getEmail(),
+                    request.getUsername()
+            );
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Instructor creado exitosamente con credenciales");
+            response.put("instructor", instructorCreado);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al crear instructor: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+    // Clase DTO para la request
+    public static class CrearInstructorConEmailRequest {
+        private Instructor instructor;
+        private String email;
+        private String username;
+
+        // Constructores
+        public CrearInstructorConEmailRequest() {}
+
+        public CrearInstructorConEmailRequest(Instructor instructor, String email, String username) {
+            this.instructor = instructor;
+            this.email = email;
+            this.username = username;
+        }
+
+        // Getters y Setters
+        public Instructor getInstructor() { return instructor; }
+        public void setInstructor(Instructor instructor) { this.instructor = instructor; }
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
     }
 }
