@@ -20,13 +20,30 @@ public class PagoController {
     @PostMapping
     public ResponseEntity<?> crearPago(@RequestBody Pago pago) {
         try {
-            // Validaciones básicas
+            // Validaciones mejoradas
             if (pago.getFolioCliente() == null || pago.getFolioCliente().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("El folio del cliente es requerido");
             }
-            if (pago.getCodigoProducto() == null || pago.getCodigoProducto().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("El código de producto es requerido");
+
+            if (pago.getTipoPago() == null || pago.getTipoPago().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("El tipo de pago es requerido");
             }
+
+            // Validaciones específicas por tipo
+            if ("producto".equals(pago.getTipoPago())) {
+                if (pago.getCodigoProducto() == null || pago.getCodigoProducto().trim().isEmpty()) {
+                    return ResponseEntity.badRequest().body("El código de producto es requerido para pagos de producto");
+                }
+            } else if ("membresia".equals(pago.getTipoPago())) {
+                if (pago.getIdMembresia() == null || pago.getIdMembresia().trim().isEmpty()) {
+                    return ResponseEntity.badRequest().body("El ID de membresía es requerido para pagos de membresía");
+                }
+                // Para membresías, forzar cantidad = 1
+                pago.setCantidad(1);
+            } else {
+                return ResponseEntity.badRequest().body("Tipo de pago no válido. Use 'producto' o 'membresia'");
+            }
+
             if (pago.getTotal() == null || pago.getTotal() <= 0) {
                 return ResponseEntity.badRequest().body("El total debe ser mayor a 0");
             }

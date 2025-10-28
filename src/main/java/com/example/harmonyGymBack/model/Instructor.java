@@ -21,6 +21,9 @@ public class Instructor {
     @Column(name = "APM", length = 50)
     private String apm;
 
+    @Column(name = "Email", length = 100, nullable = true)
+    private String email;
+
     @Column(name = "Hora_Entrada")
     private LocalTime horaEntrada;
 
@@ -36,17 +39,17 @@ public class Instructor {
     @Column(name = "Estatus", length = 10)
     private String estatus = "Activo";
 
-
     // Constructores
     public Instructor() {}
 
-    public Instructor(String folioInstructor, String nombre, String app, String apm,
+    public Instructor(String folioInstructor, String nombre, String app, String apm, String email,
                       LocalTime horaEntrada, LocalTime horaSalida, String especialidad,
                       LocalDate fechaContratacion, String estatus) {
         this.folioInstructor = folioInstructor;
         this.nombre = nombre;
         this.app = app;
         this.apm = apm;
+        this.email = email;
         this.horaEntrada = horaEntrada;
         this.horaSalida = horaSalida;
         this.especialidad = especialidad;
@@ -54,9 +57,7 @@ public class Instructor {
         this.estatus = estatus;
     }
 
-
-
-    // Getters y Setters
+    // Getters y Setters con validación para email
     public String getFolioInstructor() {
         return folioInstructor;
     }
@@ -87,6 +88,19 @@ public class Instructor {
 
     public void setApm(String apm) {
         this.apm = apm;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        // Validar que no sea string "null" o vacío
+        if (email != null && (email.trim().equalsIgnoreCase("null") || email.trim().isEmpty())) {
+            this.email = null;
+        } else {
+            this.email = email;
+        }
     }
 
     public LocalTime getHoraEntrada() {
@@ -129,9 +143,6 @@ public class Instructor {
         this.estatus = estatus;
     }
 
-
-
-
     @Override
     public String toString() {
         return "Instructor{" +
@@ -139,12 +150,12 @@ public class Instructor {
                 ", nombre='" + nombre + '\'' +
                 ", app='" + app + '\'' +
                 ", apm='" + apm + '\'' +
+                ", email=" + email + // Cambiado para mostrar null correctamente
                 ", horaEntrada=" + horaEntrada +
                 ", horaSalida=" + horaSalida +
                 ", especialidad='" + especialidad + '\'' +
                 ", fechaContratacion=" + fechaContratacion +
-                ", estatus='" + estatus + '\''+
-
+                ", estatus='" + estatus + '\'' +
                 '}';
     }
 }

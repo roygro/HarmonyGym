@@ -261,4 +261,28 @@ public class MembresiaClienteController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
+
+
+    // ==================== OBTENER TODAS LAS MEMBRESÍAS ====================
+
+    @GetMapping
+    public ResponseEntity<?> obtenerTodasLasMembresias() {
+        try {
+            List<MembresiaCliente> membresias = membresiaClienteService.obtenerTodasLasMembresias();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("membresias", membresias);
+            response.put("total", membresias.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al obtener todas las membresías: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
 }
