@@ -396,4 +396,5 @@ public class AuthService {
     public Optional<Usuario> obtenerUsuarioPorUsername(String username) {
         return usuarioRepository.findByUsername(username);
     }
+
 }
