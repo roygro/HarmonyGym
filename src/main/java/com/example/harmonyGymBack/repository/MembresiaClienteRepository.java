@@ -54,4 +54,14 @@ public interface MembresiaClienteRepository extends JpaRepository<MembresiaClien
     // Buscar membresías por tipo de membresía
     @Query("SELECT mc FROM MembresiaCliente mc WHERE mc.membresia.tipo = :tipo AND mc.estatus = 'Activa'")
     List<MembresiaCliente> findByMembresiaTipoAndActiva(@Param("tipo") com.example.harmonyGymBack.model.TipoMembresia tipo);
+
+
+    // Verificar si existe otra membresía activa excluyendo una específica
+    @Query("SELECT COUNT(mc) > 0 FROM MembresiaCliente mc WHERE mc.cliente.folioCliente = :folioCliente AND mc.estatus = :estatus AND mc.idMembresiaCliente != :excludeId")
+    boolean existsByClienteFolioClienteAndEstatusAndIdMembresiaClienteNot(
+            @Param("folioCliente") String folioCliente,
+            @Param("estatus") String estatus,
+            @Param("excludeId") Long excludeId);
+
+
 }
