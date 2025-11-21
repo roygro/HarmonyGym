@@ -3,9 +3,12 @@ package com.example.harmonyGymBack.service;
 import com.example.harmonyGymBack.model.Cliente;
 import com.example.harmonyGymBack.model.Membresia;
 import com.example.harmonyGymBack.model.MembresiaCliente;
+import com.example.harmonyGymBack.model.PlanPago;
+import com.example.harmonyGymBack.model.PlanPersonalizado;
 import com.example.harmonyGymBack.repository.ClienteRepository;
 import com.example.harmonyGymBack.repository.MembresiaClienteRepository;
 import com.example.harmonyGymBack.repository.MembresiaRepository;
+import com.example.harmonyGymBack.repository.PlanPagoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +32,15 @@ public class MembresiaClienteService {
     @Autowired
     private MembresiaRepository membresiaRepository;
 
+    // ✅ NUEVO: Repository para PlanPago
+    @Autowired
+    private PlanPagoRepository planPagoRepository;
+
     // ==================== ASIGNAR MEMBRESÍA A CLIENTE ====================
 
-    public MembresiaCliente asignarMembresiaACliente(String folioCliente, String idMembresia, LocalDate fechaInicio) {
-        System.out.println("🚀 Asignando membresía al cliente: " + folioCliente);
+    // ✅ MODIFICADO: Ahora recibe idPlanPago
+    public MembresiaCliente asignarMembresiaACliente(String folioCliente, String idMembresia, Long idPlanPago, LocalDate fechaInicio) {
+        System.out.println("🚀 Asignando membresía con plan de pago al cliente: " + folioCliente);
 
         // Verificar que el cliente existe y está activo
         Cliente cliente = clienteRepository.findById(folioCliente)
@@ -50,22 +58,32 @@ public class MembresiaClienteService {
             throw new RuntimeException("La membresía no está activa");
         }
 
+        // ✅ NUEVO: Verificar que el plan de pago existe y está activo
+        PlanPago planPago = planPagoRepository.findById(idPlanPago)
+                .orElseThrow(() -> new RuntimeException("Plan de pago no encontrado: " + idPlanPago));
+
+        if (!"Activo".equals(planPago.getEstatus())) {
+            throw new RuntimeException("El plan de pago no está activo");
+        }
+
         // Verificar que el cliente no tenga membresía activa
         if (membresiaClienteRepository.existsByClienteFolioClienteAndEstatus(folioCliente, "Activa")) {
             throw new RuntimeException("El cliente ya tiene una membresía activa");
         }
 
-        // Crear la nueva membresía para el cliente
-        MembresiaCliente nuevaMembresia = new MembresiaCliente(cliente, membresia, fechaInicio);
+        // ✅ MODIFICADO: Crear la nueva membresía con plan de pago
+        MembresiaCliente nuevaMembresia = new MembresiaCliente(cliente, membresia, fechaInicio, planPago);
 
         MembresiaCliente membresiaGuardada = membresiaClienteRepository.save(nuevaMembresia);
+
+        // ✅ NUEVO: Calcular precio final con descuento
+        double precioFinal = nuevaMembresia.calcularPrecioFinal();
         System.out.println("✅ Membresía asignada exitosamente: " + membresiaGuardada.getIdMembresiaCliente());
+        System.out.println("💰 Precio final con descuento: $" + precioFinal);
 
         return membresiaGuardada;
     }
 
-
-    // ==================== RENOVAR MEMBRESÍA ====================
 
     public MembresiaCliente renovarMembresia(Long idMembresiaCliente) {
         System.out.println("🔄 Renovando membresía: " + idMembresiaCliente);
@@ -87,6 +105,19 @@ public class MembresiaClienteService {
             throw new RuntimeException("El cliente ya tiene otra membresía activa. Cancele la actual antes de renovar.");
         }
 
+        // ✅ NUEVO: Verificar que la membresía tenga un plan de pago
+        if (membresiaActual.getPlanPago() == null) {
+            System.out.println("⚠️  Membresía sin plan de pago, asignando plan por defecto");
+
+            // Buscar un plan activo por defecto (por ejemplo, plan mensual sin descuento)
+            PlanPago planPorDefecto = planPagoRepository.findByNombre("Plan Mensual Sin Dto")
+                    .orElseThrow(() -> new RuntimeException("No se encontró un plan de pago por defecto"));
+
+            membresiaActual.setPlanPago(planPorDefecto);
+            membresiaClienteRepository.save(membresiaActual);
+            System.out.println("✅ Plan por defecto asignado: " + planPorDefecto.getNombre());
+        }
+
         // Lógica según el estatus actual
         switch (estatusActual) {
             case "Activa":
@@ -95,23 +126,25 @@ public class MembresiaClienteService {
                 membresiaActual.setEstatus("Inactiva");
                 membresiaClienteRepository.save(membresiaActual);
 
-                // Crear nueva membresía comenzando al día siguiente de la fecha fin
+                // ✅ CORREGIDO: Verificar que planPago no sea null
                 LocalDate nuevaFechaInicio = membresiaActual.getFechaFin().plusDays(1);
                 MembresiaCliente nuevaMembresia = new MembresiaCliente(
                         membresiaActual.getCliente(),
                         membresiaActual.getMembresia(),
-                        nuevaFechaInicio
+                        nuevaFechaInicio,
+                        membresiaActual.getPlanPago() // ✅ Ahora seguro que no es null
                 );
                 return membresiaClienteRepository.save(nuevaMembresia);
 
             case "Expirada":
             case "Cancelada":
                 System.out.println("🟡 Reactivando membresía " + estatusActual);
-                // Crear una nueva membresía basada en la existente (comenzando hoy)
+                // ✅ CORREGIDO: Verificar que planPago no sea null
                 MembresiaCliente membresiaReactivada = new MembresiaCliente(
                         membresiaActual.getCliente(),
                         membresiaActual.getMembresia(),
-                        LocalDate.now() // Comenzar hoy
+                        LocalDate.now(),
+                        membresiaActual.getPlanPago() // ✅ Ahora seguro que no es null
                 );
                 return membresiaClienteRepository.save(membresiaReactivada);
 
@@ -119,9 +152,10 @@ public class MembresiaClienteService {
                 System.out.println("🟠 Reactivando membresía INACTIVA");
                 // Reactivar la membresía existente
                 membresiaActual.setEstatus("Activa");
-                // Si la fecha fin ya pasó, extenderla
+                // Si la fecha fin ya pasó, extenderla usando el plan de pago
                 if (membresiaActual.getFechaFin().isBefore(LocalDate.now())) {
-                    LocalDate nuevaFechaFin = LocalDate.now().plusDays(membresiaActual.getMembresia().getDuracion());
+                    // ✅ CORREGIDO: Verificar que planPago no sea null antes de usarlo
+                    LocalDate nuevaFechaFin = membresiaActual.getPlanPago().calcularFechaFin(LocalDate.now());
                     membresiaActual.setFechaFin(nuevaFechaFin);
                     System.out.println("📅 Extendiendo fecha fin a: " + nuevaFechaFin);
                 }
@@ -131,7 +165,6 @@ public class MembresiaClienteService {
                 throw new RuntimeException("No se puede renovar una membresía con estatus: " + estatusActual);
         }
     }
-
     // ==================== CANCELAR MEMBRESÍA ====================
 
     public MembresiaCliente cancelarMembresia(Long idMembresiaCliente) {
@@ -190,6 +223,7 @@ public class MembresiaClienteService {
             } else {
                 resultado.put("accesoPermitido", true);
                 resultado.put("membresia", membresia.getMembresia().getTipo());
+                resultado.put("planPago", membresia.getPlanPago().getNombre()); // ✅ NUEVO: Incluir info del plan
                 resultado.put("fechaFin", membresia.getFechaFin());
                 resultado.put("diasRestantes", java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), membresia.getFechaFin()));
             }
@@ -219,7 +253,6 @@ public class MembresiaClienteService {
 
         Long totalMembresias = membresiaClienteRepository.count();
         Long membresiasActivas = membresiaClienteRepository.countByEstatus("Activa");
-        Long membresiasInactivas = membresiaClienteRepository.countByEstatus("Inactiva");
         Long membresiasExpiradas = membresiaClienteRepository.countByEstatus("Expirada");
         Long membresiasCanceladas = membresiaClienteRepository.countByEstatus("Cancelada");
 
@@ -227,7 +260,6 @@ public class MembresiaClienteService {
 
         estadisticas.put("totalMembresias", totalMembresias);
         estadisticas.put("membresiasActivas", membresiasActivas);
-        estadisticas.put("membresiasInactivas", membresiasInactivas);
         estadisticas.put("membresiasExpiradas", membresiasExpiradas);
         estadisticas.put("membresiasCanceladas", membresiasCanceladas);
         estadisticas.put("membresiasPorExpirar7Dias", porExpirar.size());
@@ -256,13 +288,15 @@ public class MembresiaClienteService {
         }
 
         // Cancelar membresía actual
-        membresiaActual.setEstatus("Inactiva");
+        membresiaActual.setEstatus("Cancelada");
 
-        // Crear nueva membresía con la nueva configuración
+        // ✅ MODIFICADO: Crear nueva membresía manteniendo el mismo plan de pago
         MembresiaCliente nuevaMembresiaCliente = new MembresiaCliente(
                 membresiaActual.getCliente(),
                 nuevaMembresia,
-                LocalDate.now()
+                LocalDate.now(),
+                membresiaActual.getPlanPago() // ✅ Mantener el plan de pago actual
+
         );
 
         MembresiaCliente membresiaCambiada = membresiaClienteRepository.save(nuevaMembresiaCliente);
@@ -272,6 +306,148 @@ public class MembresiaClienteService {
     }
 
     public List<MembresiaCliente> obtenerTodasLasMembresias() {
-        return membresiaClienteRepository.findAll(); // O el método equivalente de tu repository
+        return membresiaClienteRepository.findAll();
+    }
+
+    // ==================== MÉTODOS NUEVOS PARA PLANES DE PAGO ====================
+
+    /**
+     * ✅ NUEVO: Cambiar el plan de pago de una membresía existente
+     */
+    public MembresiaCliente cambiarPlanPago(Long idMembresiaCliente, Long nuevoIdPlanPago) {
+        System.out.println("🔄 Cambiando plan de pago para membresía: " + idMembresiaCliente);
+
+        MembresiaCliente membresia = membresiaClienteRepository.findById(idMembresiaCliente)
+                .orElseThrow(() -> new RuntimeException("Membresía no encontrada: " + idMembresiaCliente));
+
+        if (!"Activa".equals(membresia.getEstatus())) {
+            throw new RuntimeException("Solo se pueden cambiar planes de pago en membresías activas");
+        }
+
+        PlanPago nuevoPlan = planPagoRepository.findById(nuevoIdPlanPago)
+                .orElseThrow(() -> new RuntimeException("Plan de pago no encontrado: " + nuevoIdPlanPago));
+
+        if (!"Activo".equals(nuevoPlan.getEstatus())) {
+            throw new RuntimeException("El plan de pago no está activo");
+        }
+
+        // Cambiar el plan de pago
+        membresia.setPlanPago(nuevoPlan);
+
+        MembresiaCliente membresiaActualizada = membresiaClienteRepository.save(membresia);
+
+        double nuevoPrecio = membresiaActualizada.calcularPrecioFinal();
+        System.out.println("✅ Plan de pago cambiado. Nuevo precio: $" + nuevoPrecio);
+
+        return membresiaActualizada;
+    }
+
+    /**
+     * ✅ NUEVO: Crear un plan de pago personalizado
+     */
+    public PlanPago crearPlanPago(String nombre, String descripcion, Integer duracionDias, Double factorDescuento) {
+        System.out.println("➕ Creando nuevo plan de pago: " + nombre);
+
+        // Verificar si ya existe un plan con el mismo nombre
+        Optional<PlanPago> planExistente = planPagoRepository.findByNombre(nombre);
+        if (planExistente.isPresent()) {
+            throw new RuntimeException("Ya existe un plan de pago con el nombre: " + nombre);
+        }
+
+        // Crear plan personalizado
+        PlanPersonalizado planCustom = new PlanPersonalizado();
+        planCustom.setNombre(nombre);
+        planCustom.setDescripcion(descripcion);
+        planCustom.setDuracionDias(duracionDias);
+        planCustom.setFactorDescuento(factorDescuento);
+
+        PlanPago planGuardado = planPagoRepository.save(planCustom);
+        System.out.println("✅ Plan de pago creado exitosamente: " + planGuardado.getId());
+
+        return planGuardado;
+    }
+
+    /**
+     * ✅ NUEVO: Obtener todos los planes de pago disponibles
+     */
+    public List<PlanPago> obtenerPlanesDisponibles() {
+        return planPagoRepository.findByEstatus("Activo");
+    }
+
+    /**
+     * ✅ NUEVO: Crear una promoción especial con descuento
+     */
+    public PlanPago crearPromocion(String nombrePromocion, Object porcentajeDescuento, Integer duracionDias) {
+        Double factorDescuento;
+
+        // ✅ MANEJAR DIFERENTES TIPOS DE DATOS
+        if (porcentajeDescuento instanceof Integer) {
+            factorDescuento = 1.0 - (((Integer) porcentajeDescuento) / 100.0);
+        } else if (porcentajeDescuento instanceof Double) {
+            factorDescuento = 1.0 - (((Double) porcentajeDescuento) / 100.0);
+        } else {
+            throw new RuntimeException("Tipo de dato no válido para porcentajeDescuento: " + porcentajeDescuento.getClass());
+        }
+
+        return crearPlanPago(
+                nombrePromocion,
+                "Promoción especial: " + porcentajeDescuento + "% de descuento",
+                duracionDias,
+                factorDescuento
+        );
+    }
+    /**
+     * ✅ NUEVO: Obtener planes con descuento
+     */
+    public List<PlanPago> obtenerPlanesConDescuento() {
+        return planPagoRepository.findPlanesConDescuento();
+    }
+
+    /**
+     * ✅ NUEVO: Desactivar un plan de pago
+     */
+    public PlanPago desactivarPlanPago(Long idPlanPago) {
+        PlanPago plan = planPagoRepository.findById(idPlanPago)
+                .orElseThrow(() -> new RuntimeException("Plan de pago no encontrado: " + idPlanPago));
+
+        plan.setEstatus("Inactivo");
+        return planPagoRepository.save(plan);
+    }
+
+    /**
+     * ✅ NUEVO: Obtener estadísticas de planes de pago
+     */
+    public Map<String, Object> obtenerEstadisticasPlanesPago() {
+        Map<String, Object> estadisticas = new HashMap<>();
+
+        List<PlanPago> todosPlanes = planPagoRepository.findAll();
+        List<PlanPago> planesActivos = planPagoRepository.findByEstatus("Activo");
+        List<PlanPago> planesConDescuento = planPagoRepository.findPlanesConDescuento();
+
+        estadisticas.put("totalPlanes", todosPlanes.size());
+        estadisticas.put("planesActivos", planesActivos.size());
+        estadisticas.put("planesConDescuento", planesConDescuento.size());
+        estadisticas.put("planesPopulares", obtenerPlanesPopulares());
+
+        return estadisticas;
+    }
+
+    /**
+     * ✅ NUEVO: Obtener los planes más populares (más utilizados)
+     */
+    private List<Map<String, Object>> obtenerPlanesPopulares() {
+        // Esta es una implementación básica - puedes mejorarla según tus necesidades
+        List<PlanPago> planesActivos = planPagoRepository.findByEstatus("Activo");
+
+        return planesActivos.stream()
+                .map(plan -> {
+                    Map<String, Object> planInfo = new HashMap<>();
+                    planInfo.put("id", plan.getId());
+                    planInfo.put("nombre", plan.getNombre());
+                    planInfo.put("descripcion", plan.getDescripcion());
+                    planInfo.put("factorDescuento", plan.getFactorDescuento());
+                    return planInfo;
+                })
+                .toList();
     }
 }

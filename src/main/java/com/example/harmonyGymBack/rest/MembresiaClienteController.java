@@ -1,6 +1,7 @@
 package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.MembresiaCliente;
+import com.example.harmonyGymBack.model.PlanPago;
 import com.example.harmonyGymBack.service.MembresiaClienteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -23,19 +24,24 @@ public class MembresiaClienteController {
 
     // ==================== ASIGNAR MEMBRESÍA A CLIENTE ====================
 
+    // ✅ MODIFICADO: Ahora recibe idPlanPago
     @PostMapping
     public ResponseEntity<?> asignarMembresiaACliente(
             @RequestParam String folioCliente,
             @RequestParam String idMembresia,
+            @RequestParam Long idPlanPago, // ✅ NUEVO: parámetro para plan de pago
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio) {
 
         try {
-            MembresiaCliente membresia = membresiaClienteService.asignarMembresiaACliente(folioCliente, idMembresia, fechaInicio);
+            // ✅ MODIFICADO: Pasar idPlanPago al servicio
+            MembresiaCliente membresia = membresiaClienteService.asignarMembresiaACliente(
+                    folioCliente, idMembresia, idPlanPago, fechaInicio);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Membresía asignada exitosamente");
             response.put("membresia", membresia);
+            response.put("precioFinal", membresia.calcularPrecioFinal()); // ✅ NUEVO: precio con descuento
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
@@ -58,6 +64,7 @@ public class MembresiaClienteController {
             response.put("success", true);
             response.put("message", "Membresía renovada exitosamente");
             response.put("membresia", membresia);
+            response.put("precioFinal", membresia.calcularPrecioFinal()); // ✅ NUEVO: precio con descuento
 
             return ResponseEntity.ok(response);
 
@@ -101,6 +108,7 @@ public class MembresiaClienteController {
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("membresia", membresia);
+            response.put("precioFinal", membresia.calcularPrecioFinal()); // ✅ NUEVO: precio con descuento
 
             return ResponseEntity.ok(response);
 
@@ -251,6 +259,7 @@ public class MembresiaClienteController {
             response.put("success", true);
             response.put("message", "Membresía cambiada exitosamente");
             response.put("membresia", membresia);
+            response.put("precioFinal", membresia.calcularPrecioFinal()); // ✅ NUEVO: precio con descuento
 
             return ResponseEntity.ok(response);
 
@@ -261,7 +270,6 @@ public class MembresiaClienteController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
-
 
     // ==================== OBTENER TODAS LAS MEMBRESÍAS ====================
 
@@ -285,4 +293,147 @@ public class MembresiaClienteController {
         }
     }
 
+    // ==================== ENDPOINTS NUEVOS PARA PLANES DE PAGO ====================
+
+    // ✅ NUEVO: Crear plan de pago
+    @PostMapping("/planes-pago")
+    public ResponseEntity<?> crearPlanPago(@RequestBody Map<String, Object> planData) {
+        try {
+            String nombre = (String) planData.get("nombre");
+            String descripcion = (String) planData.get("descripcion");
+            Integer duracionDias = (Integer) planData.get("duracionDias");
+            Double factorDescuento = (Double) planData.get("factorDescuento");
+
+            PlanPago plan = membresiaClienteService.crearPlanPago(nombre, descripcion, duracionDias, factorDescuento);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Plan de pago creado exitosamente");
+            response.put("plan", plan);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al crear plan de pago: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+    // ✅ NUEVO: Obtener planes disponibles
+    @GetMapping("/planes-pago")
+    public ResponseEntity<?> obtenerPlanesDisponibles() {
+        try {
+            List<PlanPago> planes = membresiaClienteService.obtenerPlanesDisponibles();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("planes", planes);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al obtener planes de pago: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // ✅ NUEVO: Cambiar plan de pago de una membresía
+    @PutMapping("/{id}/cambiar-plan")
+    public ResponseEntity<?> cambiarPlanPago(@PathVariable Long id, @RequestParam Long idPlanPago) {
+        try {
+            MembresiaCliente membresia = membresiaClienteService.cambiarPlanPago(id, idPlanPago);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Plan de pago cambiado exitosamente");
+            response.put("membresia", membresia);
+            response.put("precioFinal", membresia.calcularPrecioFinal());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al cambiar plan de pago: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+    // ✅ NUEVO: Crear promoción especial
+    @PostMapping("/promociones")
+    public ResponseEntity<?> crearPromocion(@RequestBody Map<String, Object> promocionData) {
+        try {
+            String nombrePromocion = (String) promocionData.get("nombrePromocion");
+            Integer duracionDias = (Integer) promocionData.get("duracionDias");
+
+            // ✅ MANEJAR DIFERENTES TIPOS PARA porcentajeDescuento
+            Double porcentajeDescuento;
+            Object descuentoObj = promocionData.get("porcentajeDescuento");
+
+            if (descuentoObj instanceof Integer) {
+                porcentajeDescuento = ((Integer) descuentoObj).doubleValue();
+            } else if (descuentoObj instanceof Double) {
+                porcentajeDescuento = (Double) descuentoObj;
+            } else {
+                throw new RuntimeException("Tipo de dato no válido para porcentajeDescuento");
+            }
+
+            PlanPago promocion = membresiaClienteService.crearPromocion(
+                    nombrePromocion, porcentajeDescuento, duracionDias);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Promoción creada exitosamente");
+            response.put("promocion", promocion);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al crear promoción: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+    // ✅ NUEVO: Obtener planes con descuento
+    @GetMapping("/planes-pago/descuentos")
+    public ResponseEntity<?> obtenerPlanesConDescuento() {
+        try {
+            List<PlanPago> planes = membresiaClienteService.obtenerPlanesConDescuento();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("planes", planes);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al obtener planes con descuento: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // ✅ NUEVO: Estadísticas de planes de pago
+    @GetMapping("/planes-pago/estadisticas")
+    public ResponseEntity<?> obtenerEstadisticasPlanesPago() {
+        try {
+            Map<String, Object> estadisticas = membresiaClienteService.obtenerEstadisticasPlanesPago();
+            estadisticas.put("success", true);
+
+            return ResponseEntity.ok(estadisticas);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al obtener estadísticas de planes: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 }

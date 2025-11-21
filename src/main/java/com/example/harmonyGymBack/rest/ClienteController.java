@@ -52,36 +52,27 @@ public class ClienteController {
         }
     }
 
-    // ==================== ACTUALIZAR CLIENTE CON FOTO ====================
+    // ==================== ACTUALIZAR URL DE FOTO ====================
 
-    @PutMapping(value = "/{folioCliente}", consumes = "multipart/form-data")
-    public ResponseEntity<?> actualizarClienteConFoto(
+    @PutMapping("/{folioCliente}/url-foto")
+    public ResponseEntity<?> actualizarUrlFoto(
             @PathVariable String folioCliente,
-            @RequestParam(value = "nombre", required = false) String nombre,
-            @RequestParam(value = "telefono", required = false) String telefono,
-            @RequestParam(value = "email", required = false) String email,
-            @RequestParam(value = "fechaNacimiento", required = false) String fechaNacimiento,
-            @RequestParam(value = "genero", required = false) String genero,
-            @RequestParam(value = "estatus", required = false) String estatus,
-            @RequestParam(value = "foto", required = false) MultipartFile foto,
-            @RequestParam(value = "eliminarFoto", defaultValue = "false") boolean eliminarFoto) {
+            @RequestParam("urlFoto") String urlFoto) {
 
         try {
-            Cliente cliente = clienteService.actualizarClienteConFoto(
-                    folioCliente, nombre, telefono, email, fechaNacimiento, genero,
-                    estatus, foto, eliminarFoto);
+            Cliente clienteActualizado = clienteService.actualizarUrlFoto(folioCliente, urlFoto);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Cliente actualizado exitosamente");
-            response.put("cliente", cliente);
+            response.put("message", "URL de foto actualizada exitosamente");
+            response.put("cliente", clienteActualizado);
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Error al actualizar cliente: " + e.getMessage());
+            response.put("message", "Error al actualizar URL de foto: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
@@ -242,4 +233,34 @@ public class ClienteController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    // ==================== ACTUALIZAR SOLO LA FOTO (URL) ====================
+
+    @PutMapping("/{folioCliente}/foto-url")
+    public ResponseEntity<?> actualizarFotoUrl(
+            @PathVariable String folioCliente,
+            @RequestParam("nombreArchivoFoto") String nombreArchivoFoto) {
+
+        try {
+            Cliente clienteExistente = clienteService.obtenerClientePorId(folioCliente);
+            clienteExistente.setNombreArchivoFoto(nombreArchivoFoto);
+
+            Cliente clienteActualizado = clienteService.actualizarCliente(folioCliente, clienteExistente);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Foto actualizada exitosamente");
+            response.put("cliente", clienteActualizado);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error al actualizar foto: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+
 }

@@ -37,7 +37,7 @@ public class Cliente {
 
 
     // NUEVO CAMPO: Nombre del archivo de foto
-    @Column(name = "Nombre_Archivo_Foto", length = 255)
+    @Column(name = "Nombre_Archivo_Foto", length = 1000)
     private String nombreArchivoFoto;
 
     // Constructores

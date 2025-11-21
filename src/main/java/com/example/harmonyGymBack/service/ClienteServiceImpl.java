@@ -402,61 +402,15 @@ public class ClienteServiceImpl {
         return clienteGuardado;
     }
 
-    // ==================== ACTUALIZAR CLIENTE CON FOTO ====================
-
     @Transactional
     public Cliente actualizarClienteConFoto(String folioCliente, String nombre, String telefono,
                                             String email, String fechaNacimiento, String genero,
                                             String estatus, MultipartFile foto,
                                             boolean eliminarFoto) throws IOException {
-        System.out.println("✏ Actualizando cliente: " + folioCliente);
-
-        Cliente clienteExistente = obtenerClientePorId(folioCliente);
-
-        validarArchivo(foto);
-
-        if (nombre != null) clienteExistente.setNombre(nombre);
-        if (telefono != null) clienteExistente.setTelefono(telefono);
-        if (email != null) clienteExistente.setEmail(email);
-        if (genero != null) clienteExistente.setGenero(genero);
-        if (estatus != null) clienteExistente.setEstatus(estatus);
-
-        if (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty()) {
-            clienteExistente.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
-        }
-
-        // Validar email único excluyendo el actual
-        if (email != null && clienteRepository.existsByEmailAndNotId(email, folioCliente)) {
-            throw new RuntimeException("El email ya está registrado por otro cliente");
-        }
-
-        // Validar teléfono único excluyendo el actual
-        if (telefono != null && clienteRepository.existsByTelefonoAndNotId(telefono, folioCliente)) {
-            throw new RuntimeException("El teléfono ya está registrado por otro cliente");
-        }
-
-        // Manejo de la foto
-        if (eliminarFoto) {
-            if (clienteExistente.getNombreArchivoFoto() != null) {
-                eliminarArchivo(clienteExistente.getNombreArchivoFoto());
-                clienteExistente.setNombreArchivoFoto(null);
-                System.out.println("🗑 Foto eliminada");
-            }
-        } else if (foto != null && !foto.isEmpty()) {
-            if (clienteExistente.getNombreArchivoFoto() != null) {
-                eliminarArchivo(clienteExistente.getNombreArchivoFoto());
-            }
-            String nombreArchivoFoto = guardarArchivo(foto, folioCliente);
-            clienteExistente.setNombreArchivoFoto(nombreArchivoFoto);
-            System.out.println("📸 Foto actualizada: " + nombreArchivoFoto);
-        }
-
-        Cliente clienteActualizado = clienteRepository.save(clienteExistente);
-        System.out.println("✅ Cliente actualizado: " + folioCliente);
-
-        return clienteActualizado;
+        // Llamar al método sobrecargado con nombreArchivoFoto como null
+        return actualizarClienteConFoto(folioCliente, nombre, telefono, email, fechaNacimiento,
+                genero, estatus, foto, eliminarFoto, null);
     }
-
     // ==================== MÉTODOS ORIGINALES ====================
 
     public Cliente crearCliente(Cliente cliente) {
@@ -728,5 +682,141 @@ public class ClienteServiceImpl {
         estadisticas.put("clientesConMembresiaActiva", clienteRepository.findClientesConMembresiaActiva().size());
 
         return estadisticas;
+    }
+
+    // ==================== MÉTODOS PARA MANEJAR URL DE FOTO ====================
+
+    /**
+     * Actualizar solo la URL de la foto del cliente
+     */
+    @Transactional
+    public Cliente actualizarUrlFoto(String folioCliente, String urlFoto) {
+        System.out.println("📸 Actualizando URL de foto para: " + folioCliente);
+
+        Cliente clienteExistente = obtenerClientePorId(folioCliente);
+
+        // Validar que sea una URL válida
+        if (urlFoto != null && !urlFoto.trim().isEmpty()) {
+            try {
+                // Validar formato de URL
+                if (!esUrlValida(urlFoto)) {
+                    throw new RuntimeException("La URL proporcionada no tiene un formato válido");
+                }
+
+                clienteExistente.setNombreArchivoFoto(urlFoto.trim());
+                System.out.println("✅ URL de foto validada y guardada: " +
+                        (urlFoto.length() > 100 ? urlFoto.substring(0, 100) + "..." : urlFoto));
+            } catch (Exception e) {
+                throw new RuntimeException("Error al validar URL: " + e.getMessage());
+            }
+        } else {
+            // Si la URL está vacía, eliminar la foto
+            clienteExistente.setNombreArchivoFoto(null);
+            System.out.println("🗑 Foto eliminada (URL vacía)");
+        }
+
+        Cliente clienteActualizado = clienteRepository.save(clienteExistente);
+        System.out.println("✅ URL de foto actualizada para: " + folioCliente);
+
+        return clienteActualizado;
+    }
+
+    /**
+     * Método auxiliar para validar URLs
+     */
+    private boolean esUrlValida(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return false;
+        }
+
+        String urlTrimmed = url.trim();
+
+        // Verificar que comience con http:// o https://
+        if (!urlTrimmed.startsWith("http://") && !urlTrimmed.startsWith("https://")) {
+            return false;
+        }
+
+        // Verificar longitud razonable (máximo 1000 caracteres)
+        if (urlTrimmed.length() > 1000) {
+            throw new RuntimeException("La URL es demasiado larga (máximo 1000 caracteres)");
+        }
+
+        // Verificar formato básico de URL
+        try {
+            new java.net.URL(urlTrimmed);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Actualizar cliente con URL de foto (sobrecarga del método existente)
+     */
+    @Transactional
+    public Cliente actualizarClienteConFoto(String folioCliente, String nombre, String telefono,
+                                            String email, String fechaNacimiento, String genero,
+                                            String estatus, MultipartFile foto,
+                                            boolean eliminarFoto, String nombreArchivoFoto) throws IOException {
+        System.out.println("✏ Actualizando cliente con URL de foto: " + folioCliente);
+
+        Cliente clienteExistente = obtenerClientePorId(folioCliente);
+
+        validarArchivo(foto);
+
+        if (nombre != null) clienteExistente.setNombre(nombre);
+        if (telefono != null) clienteExistente.setTelefono(telefono);
+        if (email != null) clienteExistente.setEmail(email);
+        if (genero != null) clienteExistente.setGenero(genero);
+        if (estatus != null) clienteExistente.setEstatus(estatus);
+
+        if (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty()) {
+            clienteExistente.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
+        }
+
+        // Validar email único excluyendo el actual
+        if (email != null && clienteRepository.existsByEmailAndNotId(email, folioCliente)) {
+            throw new RuntimeException("El email ya está registrado por otro cliente");
+        }
+
+        // Validar teléfono único excluyendo el actual
+        if (telefono != null && clienteRepository.existsByTelefonoAndNotId(telefono, folioCliente)) {
+            throw new RuntimeException("El teléfono ya está registrado por otro cliente");
+        }
+
+        // Manejo de la foto - PRIORIDAD PARA URL
+        if (nombreArchivoFoto != null && !nombreArchivoFoto.trim().isEmpty()) {
+            // Si se envía una URL, validarla y usarla directamente
+            if (esUrlValida(nombreArchivoFoto)) {
+                clienteExistente.setNombreArchivoFoto(nombreArchivoFoto.trim());
+                System.out.println("📸 URL de foto actualizada: " +
+                        (nombreArchivoFoto.length() > 100 ? nombreArchivoFoto.substring(0, 100) + "..." : nombreArchivoFoto));
+            } else {
+                throw new RuntimeException("La URL de foto proporcionada no es válida");
+            }
+        } else if (eliminarFoto) {
+            if (clienteExistente.getNombreArchivoFoto() != null) {
+                // Solo eliminar archivo físico si es un archivo local, no una URL
+                if (!clienteExistente.getNombreArchivoFoto().startsWith("http")) {
+                    eliminarArchivo(clienteExistente.getNombreArchivoFoto());
+                }
+                clienteExistente.setNombreArchivoFoto(null);
+                System.out.println("🗑 Foto eliminada");
+            }
+        } else if (foto != null && !foto.isEmpty()) {
+            // Si se sube un archivo, eliminar la anterior (si es local) y guardar la nueva
+            if (clienteExistente.getNombreArchivoFoto() != null &&
+                    !clienteExistente.getNombreArchivoFoto().startsWith("http")) {
+                eliminarArchivo(clienteExistente.getNombreArchivoFoto());
+            }
+            String nombreArchivoFotoGuardado = guardarArchivo(foto, folioCliente);
+            clienteExistente.setNombreArchivoFoto(nombreArchivoFotoGuardado);
+            System.out.println("📸 Foto actualizada: " + nombreArchivoFotoGuardado);
+        }
+
+        Cliente clienteActualizado = clienteRepository.save(clienteExistente);
+        System.out.println("✅ Cliente actualizado: " + folioCliente);
+
+        return clienteActualizado;
     }
 }

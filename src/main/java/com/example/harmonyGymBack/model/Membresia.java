@@ -4,10 +4,10 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "membresia") // Nombre exacto de tu tabla
+@Table(name = "membresia")
 public class Membresia {
     @Id
-    @Column(name = "id_membresia") // Mapea el nombre de columna
+    @Column(name = "id_membresia")
     private String idMembresia;
 
     @Enumerated(EnumType.STRING)
@@ -46,6 +46,11 @@ public class Membresia {
         this.duracion = duracion;
         this.descripcion = descripcion;
         this.beneficios = beneficios;
+    }
+
+    // ✅ NUEVO MÉTODO: Para compatibilidad con el patrón Bridge
+    public Double getPrecioBase() {
+        return this.precio != null ? this.precio : 0.0;
     }
 
     // Getters y Setters
@@ -112,5 +117,21 @@ public class Membresia {
     public void setFechaCreacion(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
-}
 
+    // ✅ OPCIONAL: Método para verificar si está activa
+    public boolean isActiva() {
+        return "ACTIVO".equalsIgnoreCase(this.estatus);
+    }
+
+    // ✅ OPCIONAL: Método toString para debugging
+    @Override
+    public String toString() {
+        return "Membresia{" +
+                "idMembresia='" + idMembresia + '\'' +
+                ", tipo=" + tipo +
+                ", precio=" + precio +
+                ", duracion=" + duracion +
+                ", estatus='" + estatus + '\'' +
+                '}';
+    }
+}
