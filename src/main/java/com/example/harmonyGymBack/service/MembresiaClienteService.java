@@ -64,7 +64,6 @@ public class MembresiaClienteService {
         return membresiaGuardada;
     }
 
-    // ==================== RENOVAR MEMBRESÍA ====================
 
     // ==================== RENOVAR MEMBRESÍA ====================
 
