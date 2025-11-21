@@ -106,6 +106,19 @@ public class MembresiaClienteService {
             throw new RuntimeException("El cliente ya tiene otra membresía activa. Cancele la actual antes de renovar.");
         }
 
+        // ✅ NUEVO: Verificar que la membresía tenga un plan de pago
+        if (membresiaActual.getPlanPago() == null) {
+            System.out.println("⚠️  Membresía sin plan de pago, asignando plan por defecto");
+
+            // Buscar un plan activo por defecto (por ejemplo, plan mensual sin descuento)
+            PlanPago planPorDefecto = planPagoRepository.findByNombre("Plan Mensual Sin Dto")
+                    .orElseThrow(() -> new RuntimeException("No se encontró un plan de pago por defecto"));
+
+            membresiaActual.setPlanPago(planPorDefecto);
+            membresiaClienteRepository.save(membresiaActual);
+            System.out.println("✅ Plan por defecto asignado: " + planPorDefecto.getNombre());
+        }
+
         // Lógica según el estatus actual
         switch (estatusActual) {
             case "Activa":
@@ -114,27 +127,25 @@ public class MembresiaClienteService {
                 membresiaActual.setEstatus("Inactiva");
                 membresiaClienteRepository.save(membresiaActual);
 
-                // ✅ MODIFICADO: Usar el plan de pago actual para la renovación
+                // ✅ CORREGIDO: Verificar que planPago no sea null
                 LocalDate nuevaFechaInicio = membresiaActual.getFechaFin().plusDays(1);
                 MembresiaCliente nuevaMembresia = new MembresiaCliente(
                         membresiaActual.getCliente(),
                         membresiaActual.getMembresia(),
                         nuevaFechaInicio,
-                        membresiaActual.getPlanPago() // ✅ Mantener el mismo plan de pago
-
+                        membresiaActual.getPlanPago() // ✅ Ahora seguro que no es null
                 );
                 return membresiaClienteRepository.save(nuevaMembresia);
 
             case "Expirada":
             case "Cancelada":
                 System.out.println("🟡 Reactivando membresía " + estatusActual);
-                // ✅ MODIFICADO: Usar el plan de pago actual para la reactivación
+                // ✅ CORREGIDO: Verificar que planPago no sea null
                 MembresiaCliente membresiaReactivada = new MembresiaCliente(
                         membresiaActual.getCliente(),
                         membresiaActual.getMembresia(),
                         LocalDate.now(),
-                        membresiaActual.getPlanPago() // ✅ Mantener el mismo plan de pago
-
+                        membresiaActual.getPlanPago() // ✅ Ahora seguro que no es null
                 );
                 return membresiaClienteRepository.save(membresiaReactivada);
 
@@ -144,6 +155,7 @@ public class MembresiaClienteService {
                 membresiaActual.setEstatus("Activa");
                 // Si la fecha fin ya pasó, extenderla usando el plan de pago
                 if (membresiaActual.getFechaFin().isBefore(LocalDate.now())) {
+                    // ✅ CORREGIDO: Verificar que planPago no sea null antes de usarlo
                     LocalDate nuevaFechaFin = membresiaActual.getPlanPago().calcularFechaFin(LocalDate.now());
                     membresiaActual.setFechaFin(nuevaFechaFin);
                     System.out.println("📅 Extendiendo fecha fin a: " + nuevaFechaFin);
@@ -154,7 +166,6 @@ public class MembresiaClienteService {
                 throw new RuntimeException("No se puede renovar una membresía con estatus: " + estatusActual);
         }
     }
-
     // ==================== CANCELAR MEMBRESÍA ====================
 
     public MembresiaCliente cancelarMembresia(Long idMembresiaCliente) {
@@ -243,7 +254,6 @@ public class MembresiaClienteService {
 
         Long totalMembresias = membresiaClienteRepository.count();
         Long membresiasActivas = membresiaClienteRepository.countByEstatus("Activa");
-        Long membresiasInactivas = membresiaClienteRepository.countByEstatus("Inactiva");
         Long membresiasExpiradas = membresiaClienteRepository.countByEstatus("Expirada");
         Long membresiasCanceladas = membresiaClienteRepository.countByEstatus("Cancelada");
 
@@ -251,7 +261,6 @@ public class MembresiaClienteService {
 
         estadisticas.put("totalMembresias", totalMembresias);
         estadisticas.put("membresiasActivas", membresiasActivas);
-        estadisticas.put("membresiasInactivas", membresiasInactivas);
         estadisticas.put("membresiasExpiradas", membresiasExpiradas);
         estadisticas.put("membresiasCanceladas", membresiasCanceladas);
         estadisticas.put("membresiasPorExpirar7Dias", porExpirar.size());
@@ -280,7 +289,7 @@ public class MembresiaClienteService {
         }
 
         // Cancelar membresía actual
-        membresiaActual.setEstatus("Inactiva");
+        membresiaActual.setEstatus("Cancelada");
 
         // ✅ MODIFICADO: Crear nueva membresía manteniendo el mismo plan de pago
         MembresiaCliente nuevaMembresiaCliente = new MembresiaCliente(
