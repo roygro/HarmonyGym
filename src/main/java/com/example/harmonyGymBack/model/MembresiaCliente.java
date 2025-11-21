@@ -21,6 +21,11 @@ public class MembresiaCliente {
     @JoinColumn(name = "id_membresia", nullable = false)
     private Membresia membresia;
 
+    // ✅ CORREGIDO: Campo planPago en la posición correcta
+    @ManyToOne
+    @JoinColumn(name = "id_plan_pago")
+    private PlanPago planPago;
+
     @Column(name = "fecha_inicio", nullable = false)
     private LocalDate fechaInicio;
 
@@ -43,12 +48,25 @@ public class MembresiaCliente {
         this.estatus = "Activa";
     }
 
-    public MembresiaCliente(Cliente cliente, Membresia membresia, LocalDate fechaInicio) {
+    // ✅ CORREGIDO: Constructor con PlanPago - método calcularPrecioFinal FUERA del constructor
+    public MembresiaCliente(Cliente cliente, Membresia membresia, LocalDate fechaInicio, PlanPago planPago) {
         this();
         this.cliente = cliente;
         this.membresia = membresia;
+        this.planPago = planPago;
         this.fechaInicio = fechaInicio;
-        this.fechaFin = fechaInicio.plusDays(membresia.getDuracion());
+        this.fechaFin = planPago.calcularFechaFin(fechaInicio);
+    }
+
+    // ✅ CORREGIDO: Método calcularPrecioFinal FUERA del constructor
+    public double calcularPrecioFinal() {
+        if (planPago == null) {
+            throw new IllegalStateException("No se puede calcular el precio: planPago es null");
+        }
+        if (membresia == null) {
+            throw new IllegalStateException("No se puede calcular el precio: membresia es null");
+        }
+        return planPago.aplicarDescuento(membresia.getPrecioBase());
     }
 
     // Getters y Setters
@@ -66,10 +84,21 @@ public class MembresiaCliente {
         }
     }
 
+    public PlanPago getPlanPago() { return planPago; }
+    public void setPlanPago(PlanPago planPago) {
+        this.planPago = planPago;
+        if (this.fechaInicio != null && planPago != null) {
+            this.fechaFin = planPago.calcularFechaFin(this.fechaInicio);
+        }
+    }
+
     public LocalDate getFechaInicio() { return fechaInicio; }
     public void setFechaInicio(LocalDate fechaInicio) {
         this.fechaInicio = fechaInicio;
-        if (this.membresia != null) {
+        // ✅ ACTUALIZADO: Usar planPago si está disponible, sino usar membresia
+        if (this.planPago != null) {
+            this.fechaFin = planPago.calcularFechaFin(fechaInicio);
+        } else if (this.membresia != null) {
             this.fechaFin = fechaInicio.plusDays(this.membresia.getDuracion());
         }
     }
