@@ -79,6 +79,11 @@ public class ActividadServiceImpl {
         actividad.setIdActividad(nuevoId);
 
         System.out.println("✅ ID asignado a la nueva actividad: " + nuevoId);
+        // ✅ VALIDAR Y ESTABLECER NIVEL POR DEFECTO
+        if (actividad.getNivelDificultad() == null) {
+            actividad.setNivelDificultad("principiante");
+        }
+        System.out.println("🎯 Nivel de dificultad asignado: " + actividad.getNivelDificultad());
 
         // Validar que no haya conflicto de horarios
         List<Actividad> conflictos = actividadRepository.findConflictingActivities(
@@ -191,6 +196,11 @@ public class ActividadServiceImpl {
         }
         if (actividadActualizada.getEstatus() != null) {
             actividadExistente.setEstatus(actividadActualizada.getEstatus());
+        }
+
+        // ✅ ACTUALIZAR NIVEL DE DIFICULTAD
+        if (actividadActualizada.getNivelDificultad() != null) {
+            actividadExistente.setNivelDificultad(actividadActualizada.getNivelDificultad());
         }
 
         // Validar conflicto de horarios (excluyendo la actividad actual)

@@ -47,6 +47,12 @@ public class Actividad {
     @Column(name = "Fecha_Creacion")
     private LocalDateTime fechaCreacion;
 
+
+    // ✅ AGREGAR ESTE CAMPO NUEVO:
+    @Column(name = "nivel_dificultad")
+    private String nivelDificultad = "principiante";
+
+
     // Relación con instructor - IGNORAR para JSON
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Folio_Instructor", referencedColumnName = "Folio_Instructor", insertable = false, updatable = false)
@@ -114,4 +120,12 @@ public class Actividad {
 
     public Instructor getInstructor() { return instructor; }
     public void setInstructor(Instructor instructor) { this.instructor = instructor; }
+
+    public String getNivelDificultad() {
+        return nivelDificultad;
+    }
+
+    public void setNivelDificultad(String nivelDificultad) {
+        this.nivelDificultad = nivelDificultad;
+    }
 }
