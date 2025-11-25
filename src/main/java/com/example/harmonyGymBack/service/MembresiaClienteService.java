@@ -84,7 +84,6 @@ public class MembresiaClienteService {
         return membresiaGuardada;
     }
 
-    // ==================== RENOVAR MEMBRESÍA ====================
 
     public MembresiaCliente renovarMembresia(Long idMembresiaCliente) {
         System.out.println("🔄 Renovando membresía: " + idMembresiaCliente);
