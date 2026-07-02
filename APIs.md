@@ -40,6 +40,14 @@ Body: grant_type=client_credentials
 | `POST` | `/v2/checkout/orders` | Crea una orden de pago con el monto del plan seleccionado |
 | `POST` | `/v2/checkout/orders/{id}/capture` | Captura y confirma el pago una vez aprobado por el usuario |
 
+### Capturas 
+<img width="921" height="576" alt="image" src="https://github.com/user-attachments/assets/2e297699-34b9-4e37-b253-daa1a1dd19d0" />
+
+<img width="921" height="436" alt="image" src="https://github.com/user-attachments/assets/a990fdca-fc64-4153-ac2c-5a508c7724b6" />
+
+<img width="921" height="575" alt="image" src="https://github.com/user-attachments/assets/7eaef789-3542-4e2a-9cda-70eb3beb913c" />
+
+
 #### Flujo de la información
 
 ```
