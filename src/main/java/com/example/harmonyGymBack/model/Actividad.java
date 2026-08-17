@@ -46,9 +46,7 @@ public class Actividad {
 
     @Column(name = "Fecha_Creacion")
     private LocalDateTime fechaCreacion;
-
-
-    // ✅ AGREGAR ESTE CAMPO NUEVO:
+    // AGREGAR ESTE CAMPO NUEVO:
     @Column(name = "nivel_dificultad")
     private String nivelDificultad = "principiante";
 
