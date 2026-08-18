@@ -1,27 +1,44 @@
-# --- Etapa 1: Construcción ---
-# Usa una imagen con Maven y JDK para compilar el código
-FROM maven:3.8.7-openjdk-18 AS build
-WORKDIR /app
+# Configuración básica
+spring.application.name=harmonyGymBack
 
-# Copia el archivo de configuración de Maven/Gradle y el código fuente
-COPY pom.xml .
-# Si usas Gradle, copia build.gradle y settings.gradle
-RUN mvn dependency:go-offline -B
+# Database Neon.tech
+spring.datasource.url=${DB_URL}
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
 
-COPY src ./src
-# Ejecuta el empaquetado y omite los tests para acelerar el proceso
-RUN mvn clean package -DskipTests
+# JPA/Hibernate
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
 
-# --- Etapa 2: Ejecución ---
-# Usa una imagen de JRE más ligera para correr la aplicación
-FROM openjdk:18-jre-slim
-WORKDIR /app
+# Pool de conexiones
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=2
 
-# Copia el archivo JAR generado en la primera etapa
-COPY --from=build /app/target/*.jar app.jar
+# Puerto (Render inyecta PORT automáticamente; si no existe, usa 8081 local)
+server.port=${PORT:8081}
 
-# Expone el puerto donde correrá la app (Render usará la variable PORT)
-EXPOSE 8080
+# Para ver errores detallados
+server.error.include-message=always
+server.error.include-binding-errors=always
+server.error.include-stacktrace=on_param
 
-# Comando para ejecutar la aplicación
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Logging para ver las requests
+logging.level.com.example.harmonyGymBack=DEBUG
+logging.level.org.springframework.web=DEBUG
+
+# ==================== EMAIL CONFIGURATION ====================
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=${MAIL_USERNAME}
+spring.mail.password=${MAIL_PASSWORD}
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=5000
+spring.mail.properties.mail.smtp.writetimeout=5000
+
+# Email Template
+app.email.from=${MAIL_USERNAME}
