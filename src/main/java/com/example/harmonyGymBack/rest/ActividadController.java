@@ -1,6 +1,7 @@
 package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.Actividad;
+import com.example.harmonyGymBack.model.enums.EstatusCatalogo;
 import com.example.harmonyGymBack.service.ActividadServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -111,7 +112,7 @@ public class ActividadController {
             @PathVariable String id,
             @RequestParam String estatus) {
         try {
-            Actividad actividad = actividadService.cambiarEstatusActividad(id, estatus);
+            Actividad actividad = actividadService.cambiarEstatusActividad(id, EstatusCatalogo.fromString(estatus));
             return new ResponseEntity<>(Map.of(
                     "message", "Estatus de actividad actualizado exitosamente",
                     "data", actividad

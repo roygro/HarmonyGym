@@ -1,5 +1,6 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -27,7 +28,7 @@ public class Producto {
     private String descripcion;
 
     @Column(name = "estatus", nullable = false, length = 20)
-    private String estatus;
+    private EstatusPersona estatus;
 
     @Column(name = "fecha_registro", nullable = false)
     private LocalDateTime fechaRegistro;
@@ -35,7 +36,7 @@ public class Producto {
     // Constructores
     public Producto() {
         this.fechaRegistro = LocalDateTime.now();
-        this.estatus = "Activo";
+        this.estatus = EstatusPersona.Activo;
         this.stock = 0;
     }
 
@@ -51,82 +52,32 @@ public class Producto {
     }
 
     // Getters y Setters
-    public String getCodigo() {
-        return codigo;
-    }
+    public String getCodigo() { return codigo; }
+    public void setCodigo(String codigo) { this.codigo = codigo; }
 
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
-    }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public String getNombre() {
-        return nombre;
-    }
+    public Double getPrecio() { return precio; }
+    public void setPrecio(Double precio) { this.precio = precio; }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
+    public Integer getStock() { return stock; }
+    public void setStock(Integer stock) { this.stock = stock; }
 
-    public Double getPrecio() {
-        return precio;
-    }
+    public String getCategoria() { return categoria; }
+    public void setCategoria(String categoria) { this.categoria = categoria; }
 
-    public void setPrecio(Double precio) {
-        this.precio = precio;
-    }
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
-    public Integer getStock() {
-        return stock;
-    }
+    public EstatusPersona getEstatus() { return estatus; }
+    public void setEstatus(EstatusPersona estatus) { this.estatus = estatus; }
+    public void setEstatus(String estatus) { this.estatus = EstatusPersona.fromString(estatus); }
 
-    public void setStock(Integer stock) {
-        this.stock = stock;
-    }
+    public LocalDateTime getFechaRegistro() { return fechaRegistro; }
+    public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
 
-    public String getCategoria() {
-        return categoria;
-    }
-
-    public void setCategoria(String categoria) {
-        this.categoria = categoria;
-    }
-
-    public String getDescripcion() {
-        return descripcion;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public String getEstatus() {
-        return estatus;
-    }
-
-    public void setEstatus(String estatus) {
-        this.estatus = estatus;
-    }
-
-    public LocalDateTime getFechaRegistro() {
-        return fechaRegistro;
-    }
-
-    public void setFechaRegistro(LocalDateTime fechaRegistro) {
-        this.fechaRegistro = fechaRegistro;
-    }
-
-    // Método toString
-    @Override
-    public String toString() {
-        return "Producto{" +
-                "codigo='" + codigo + '\'' +
-                ", nombre='" + nombre + '\'' +
-                ", precio=" + precio +
-                ", stock=" + stock +
-                ", categoria='" + categoria + '\'' +
-                ", descripcion='" + descripcion + '\'' +
-                ", estatus='" + estatus + '\'' +
-                ", fechaRegistro=" + fechaRegistro +
-                '}';
+    public boolean isActivo() {
+        return EstatusPersona.Activo.equals(this.estatus);
     }
 }

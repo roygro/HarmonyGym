@@ -1,6 +1,8 @@
 package com.example.harmonyGymBack.service;
 
 import com.example.harmonyGymBack.model.*;
+import com.example.harmonyGymBack.model.enums.EstatusUsuario;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import com.example.harmonyGymBack.repository.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -51,7 +53,7 @@ public class AuthService {
                 return new AuthResponse(false, "Usuario bloqueado. Contacte al administrador.");
             }
 
-            if ("Inactivo".equals(usuario.getEstatus())) {
+            if (EstatusUsuario.Inactivo.equals(usuario.getEstatus())) {
                 System.out.println("❌ Usuario inactivo: " + username);
                 return new AuthResponse(false, "Usuario inactivo");
             }
@@ -199,7 +201,7 @@ public class AuthService {
             usuario.setPasswordHash(registerRequest.getPassword()); // En producción usar bcrypt
             usuario.setTipoUsuario(registerRequest.getTipoUsuario());
             usuario.setIdPersona(registerRequest.getIdPersona());
-            usuario.setEstatus("Activo");
+            usuario.setEstatus(EstatusUsuario.Activo);
             usuario.setIntentosLogin(0);
             usuario.setFechaCreacion(LocalDateTime.now());
 
@@ -242,7 +244,7 @@ public class AuthService {
                 usuarioRol.setIdUsuario(usuario.getIdUsuario());
                 usuarioRol.setTipoUsuario(usuario.getTipoUsuario());
                 usuarioRol.setIdRol(rol.getIdRol());
-                usuarioRol.setEstatus("Activo");
+                usuarioRol.setEstatus(EstatusPersona.Activo);
 
                 usuarioRolRepository.save(usuarioRol);
                 System.out.println("✅ Rol asignado: " + rol.getNombreRol() + " para usuario: " + usuario.getUsername());
@@ -373,7 +375,7 @@ public class AuthService {
             // Para desbloquear, cambiamos la contraseña (lo cual también desbloquea)
             // o podríamos crear un método específico en el repositorio
             Usuario usuario = usuarioOpt.get();
-            usuario.setEstatus("Activo");
+            usuario.setEstatus(EstatusUsuario.Activo);
             usuario.setFechaBloqueo(null);
             usuario.setIntentosLogin(0);
             usuarioRepository.save(usuario);

@@ -1,10 +1,9 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "CLIENTE")
@@ -32,11 +31,8 @@ public class Cliente {
     private LocalDateTime fechaRegistro;
 
     @Column(name = "Estatus")
-    private String estatus = "Activo";
+    private EstatusPersona estatus = EstatusPersona.Activo;
 
-
-
-    // NUEVO CAMPO: Nombre del archivo de foto
     @Column(name = "Nombre_Archivo_Foto", length = 1000)
     private String nombreArchivoFoto;
 
@@ -52,23 +48,17 @@ public class Cliente {
         this.fechaNacimiento = fechaNacimiento;
         this.genero = genero;
         this.fechaRegistro = LocalDateTime.now();
+        this.estatus = EstatusPersona.Activo;
     }
 
     public Cliente(String folioCliente, String nombre, String telefono, String email,
-                   LocalDate fechaNacimiento, String genero, String estatus, String nombreArchivoFoto) {
-        this.folioCliente = folioCliente;
-        this.nombre = nombre;
-        this.telefono = telefono;
-        this.email = email;
-        this.fechaNacimiento = fechaNacimiento;
-        this.genero = genero;
-        this.estatus = estatus;
+                   LocalDate fechaNacimiento, String genero, EstatusPersona estatus, String nombreArchivoFoto) {
+        this(folioCliente, nombre, telefono, email, fechaNacimiento, genero);
+        this.estatus = estatus != null ? estatus : EstatusPersona.Activo;
         this.nombreArchivoFoto = nombreArchivoFoto;
-        this.fechaRegistro = LocalDateTime.now();
     }
 
     // Getters y Setters
-
     public String getFolioCliente() { return folioCliente; }
     public void setFolioCliente(String folioCliente) { this.folioCliente = folioCliente; }
 
@@ -90,8 +80,9 @@ public class Cliente {
     public LocalDateTime getFechaRegistro() { return fechaRegistro; }
     public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
 
-    public String getEstatus() { return estatus; }
-    public void setEstatus(String estatus) { this.estatus = estatus; }
+    public EstatusPersona getEstatus() { return estatus; }
+    public void setEstatus(EstatusPersona estatus) { this.estatus = estatus; }
+    public void setEstatus(String estatus) { this.estatus = EstatusPersona.fromString(estatus); }
 
     public String getNombreArchivoFoto() { return nombreArchivoFoto; }
     public void setNombreArchivoFoto(String nombreArchivoFoto) { this.nombreArchivoFoto = nombreArchivoFoto; }
@@ -106,7 +97,7 @@ public class Cliente {
                 ", fechaNacimiento=" + fechaNacimiento +
                 ", genero='" + genero + '\'' +
                 ", fechaRegistro=" + fechaRegistro +
-                ", estatus='" + estatus + '\'' +
+                ", estatus=" + estatus +
                 ", nombreArchivoFoto='" + nombreArchivoFoto + '\'' +
                 '}';
     }

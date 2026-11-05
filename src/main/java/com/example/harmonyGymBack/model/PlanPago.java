@@ -1,5 +1,6 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -26,13 +27,17 @@ public abstract class PlanPago {
     private Double factorDescuento = 1.0;
 
     @Column(name = "estatus")
-    private String estatus = "Activo";
+    private EstatusPersona estatus = EstatusPersona.Activo;
 
     public abstract LocalDate calcularFechaFin(LocalDate fechaInicio);
     public abstract String getTipoPlan();
 
     public double aplicarDescuento(double precioBase) {
         return precioBase * factorDescuento;
+    }
+
+    public String getNombrePlan() {
+        return nombre;
     }
 
     // Getters y Setters...
@@ -46,6 +51,7 @@ public abstract class PlanPago {
     public void setDuracionDias(Integer duracionDias) { this.duracionDias = duracionDias; }
     public Double getFactorDescuento() { return factorDescuento; }
     public void setFactorDescuento(Double factorDescuento) { this.factorDescuento = factorDescuento; }
-    public String getEstatus() { return estatus; }
-    public void setEstatus(String estatus) { this.estatus = estatus; }
+    public EstatusPersona getEstatus() { return estatus; }
+    public void setEstatus(EstatusPersona estatus) { this.estatus = estatus; }
+    public void setEstatus(String estatus) { this.estatus = EstatusPersona.fromString(estatus); }
 }

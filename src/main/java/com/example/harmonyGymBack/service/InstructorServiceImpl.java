@@ -1,6 +1,8 @@
 package com.example.harmonyGymBack.service;
 
 import com.example.harmonyGymBack.model.Instructor;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
+import com.example.harmonyGymBack.model.enums.EstatusUsuario;
 import com.example.harmonyGymBack.model.Usuario;
 import com.example.harmonyGymBack.model.AuthResponse;
 import com.example.harmonyGymBack.model.RegisterRequest;
@@ -182,18 +184,18 @@ public class InstructorServiceImpl {
         return new String(passwordArray);
     }
 
-    private void sincronizarEstatusUsuario(String folioInstructor, String estatusInstructor) {
+    private void sincronizarEstatusUsuario(String folioInstructor, EstatusPersona estatusInstructor) {
         try {
             Optional<Usuario> usuarioOpt = authService.obtenerUsuarioPorIdPersona(folioInstructor);
 
             if (usuarioOpt.isPresent()) {
                 Usuario usuario = usuarioOpt.get();
-                String estatusUsuario = "Activo".equals(estatusInstructor) ? "Activo" : "Inactivo";
+                EstatusUsuario estatusUsuario = EstatusPersona.Activo.equals(estatusInstructor) ? EstatusUsuario.Activo : EstatusUsuario.Inactivo;
 
                 if (!estatusUsuario.equals(usuario.getEstatus())) {
                     usuario.setEstatus(estatusUsuario);
                     // Si se activa el instructor, resetear intentos de login
-                    if ("Activo".equals(estatusUsuario)) {
+                    if (EstatusUsuario.Activo.equals(estatusUsuario)) {
                         usuario.setIntentosLogin(0);
                         usuario.setFechaBloqueo(null);
                     }
@@ -292,7 +294,7 @@ public class InstructorServiceImpl {
         }
 
         if (instructor.getEstatus() == null) {
-            instructor.setEstatus("Activo");
+            instructor.setEstatus(EstatusPersona.Activo);
         }
 
         // Validaciones de unicidad
@@ -343,7 +345,7 @@ public class InstructorServiceImpl {
         }
 
         if (instructor.getEstatus() == null) {
-            instructor.setEstatus("Activo");
+            instructor.setEstatus(EstatusPersona.Activo);
         }
 
         // Validaciones de unicidad
@@ -386,9 +388,9 @@ public class InstructorServiceImpl {
 
     public List<Instructor> obtenerInstructoresFiltrados(String estatus, String especialidad) {
         if (estatus != null && especialidad != null) {
-            return instructorRepository.findByEstatusAndEspecialidadContainingIgnoreCase(estatus, especialidad);
+            return instructorRepository.findByEstatusAndEspecialidadContainingIgnoreCase(EstatusPersona.fromString(estatus), especialidad);
         } else if (estatus != null) {
-            return instructorRepository.findByEstatus(estatus);
+            return instructorRepository.findByEstatus(EstatusPersona.fromString(estatus));
         } else if (especialidad != null) {
             return instructorRepository.findByEspecialidadContainingIgnoreCase(especialidad);
         } else {
@@ -462,37 +464,35 @@ public class InstructorServiceImpl {
     // ==================== GESTIÓN DE ESTATUS ====================
 
     @Transactional
-    public Instructor cambiarEstatusInstructor(String folioInstructor, String nuevoEstatus) {
+    public Instructor cambiarEstatusInstructor(String folioInstructor, EstatusPersona nuevoEstatus) {
         Instructor instructor = obtenerInstructorPorId(folioInstructor);
         instructor.setEstatus(nuevoEstatus);
-
         Instructor instructorActualizado = instructorRepository.save(instructor);
-
-        // ✅ Sincronizar estatus con el usuario
         try {
             sincronizarEstatusUsuario(folioInstructor, nuevoEstatus);
         } catch (Exception e) {
-            System.err.println("⚠ Advertencia: No se pudo sincronizar el estatus del usuario: " + e.getMessage());
+            System.err.println("Advertencia: " + e.getMessage());
         }
-
         return instructorActualizado;
     }
-
+    public Instructor cambiarEstatusInstructor(String folioInstructor, String nuevoEstatusStr) {
+        return cambiarEstatusInstructor(folioInstructor, EstatusPersona.fromString(nuevoEstatusStr));
+    }
     public Instructor desactivarInstructor(String folioInstructor) {
-        return cambiarEstatusInstructor(folioInstructor, "Inactivo");
+        return cambiarEstatusInstructor(folioInstructor, EstatusPersona.Inactivo);
     }
 
     public Instructor activarInstructor(String folioInstructor) {
-        return cambiarEstatusInstructor(folioInstructor, "Activo");
+        return cambiarEstatusInstructor(folioInstructor, EstatusPersona.Activo);
     }
 
     public void eliminarInstructor(String folioInstructor) {
         // Primero desactivar el instructor
-        Instructor instructorDesactivado = cambiarEstatusInstructor(folioInstructor, "Inactivo");
+        Instructor instructorDesactivado = cambiarEstatusInstructor(folioInstructor, EstatusPersona.Inactivo);
 
         // Luego desactivar el usuario asociado
         try {
-            sincronizarEstatusUsuario(folioInstructor, "Inactivo");
+            sincronizarEstatusUsuario(folioInstructor, EstatusPersona.Inactivo);
             System.out.println("✅ Instructor y usuario desactivados: " + folioInstructor);
         } catch (Exception e) {
             System.err.println("⚠ Instructor desactivado pero no se pudo desactivar el usuario: " + e.getMessage());
@@ -562,7 +562,7 @@ public class InstructorServiceImpl {
     }
 
     public List<Instructor> obtenerInstructoresActivos() {
-        return instructorRepository.findByEstatusOrderByNombreAsc("Activo");
+        return instructorRepository.findByEstatusOrderByNombreAsc(EstatusPersona.Activo);
     }
 
     public List<Instructor> buscarInstructoresPorNombre(String nombre) {
@@ -574,7 +574,7 @@ public class InstructorServiceImpl {
     }
 
     public Long contarInstructoresActivos() {
-        return instructorRepository.findByEstatus("Activo").stream().count();
+        return instructorRepository.findByEstatus(EstatusPersona.Activo).stream().count();
     }
 
     public List<Instructor> obtenerInstructoresPorEspecialidad(String especialidad) {
@@ -619,7 +619,7 @@ public class InstructorServiceImpl {
         }
 
         if (instructor.getEstatus() == null) {
-            instructor.setEstatus("Activo");
+            instructor.setEstatus(EstatusPersona.Activo);
         }
 
         // Validaciones de unicidad
@@ -680,7 +680,7 @@ public class InstructorServiceImpl {
         instructor.setApm(apm);
         instructor.setEmail(emailLimpio); // Usar email limpio
         instructor.setEspecialidad(especialidad);
-        instructor.setEstatus(estatus != null ? estatus : "Activo");
+        instructor.setEstatus(estatus != null ? EstatusPersona.fromString(estatus) : EstatusPersona.Activo);
 
         // Convertir y validar horarios
         if (horaEntrada != null && !horaEntrada.trim().isEmpty()) {

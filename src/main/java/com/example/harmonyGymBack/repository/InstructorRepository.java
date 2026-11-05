@@ -1,6 +1,7 @@
 package com.example.harmonyGymBack.repository;
 
 import com.example.harmonyGymBack.model.Instructor;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,49 +12,30 @@ import java.util.Optional;
 @Repository
 public interface InstructorRepository extends JpaRepository<Instructor, String> {
 
-    // ==================== MÉTODOS DE CONSULTA BÁSICOS ====================
+    List<Instructor> findByEstatus(EstatusPersona estatus);
 
-    // Buscar instructores por estatus
-    List<Instructor> findByEstatus(String estatus);
-
-    // Buscar instructores por especialidad (case insensitive)
     List<Instructor> findByEspecialidadContainingIgnoreCase(String especialidad);
 
-    // Buscar instructores activos ordenados por nombre
-    List<Instructor> findByEstatusOrderByNombreAsc(String estatus);
+    List<Instructor> findByEstatusOrderByNombreAsc(EstatusPersona estatus);
 
-    // Buscar por estatus y especialidad
-    List<Instructor> findByEstatusAndEspecialidadContainingIgnoreCase(String estatus, String especialidad);
+    List<Instructor> findByEstatusAndEspecialidadContainingIgnoreCase(EstatusPersona estatus, String especialidad);
 
-    // Verificar si existe un instructor por folio
     boolean existsByFolioInstructor(String folioInstructor);
 
-    // Buscar por nombre (case insensitive)
     List<Instructor> findByNombreContainingIgnoreCase(String nombre);
 
-    // Buscar por folio
     Optional<Instructor> findByFolioInstructor(String folioInstructor);
 
-    // ==================== MÉTODOS DE EMAIL (NUEVOS) ====================
-
-    // Buscar instructor por email exacto
     Optional<Instructor> findByEmail(String email);
 
-    // Verificar si existe un instructor por email
     boolean existsByEmail(String email);
 
-    // Buscar instructores por email (case insensitive, contiene)
     List<Instructor> findByEmailContainingIgnoreCase(String email);
 
-    // Buscar por estatus y email (case insensitive)
-    List<Instructor> findByEstatusAndEmailContainingIgnoreCase(String estatus, String email);
+    List<Instructor> findByEstatusAndEmailContainingIgnoreCase(EstatusPersona estatus, String email);
 
-    // Buscar por nombre o email (case insensitive)
     List<Instructor> findByNombreContainingIgnoreCaseOrEmailContainingIgnoreCase(String nombre, String email);
 
-    // ==================== CONSULTAS NATIVAS PERSONALIZADAS ====================
-
-    // Obtener instructor con información extendida del usuario
     @Query(value = """
         SELECT i.*, u.Username, u.Estatus as usuario_estatus
         FROM INSTRUCTOR i
@@ -62,11 +44,9 @@ public interface InstructorRepository extends JpaRepository<Instructor, String> 
         """, nativeQuery = true)
     Optional<Object[]> findInstructorWithUsuario(@Param("folioInstructor") String folioInstructor);
 
-    // Obtener el último folio de instructor
     @Query(value = "SELECT i.folio_instructor FROM instructor i ORDER BY i.folio_instructor DESC LIMIT 1", nativeQuery = true)
     String findUltimoFolioInstructor();
 
-    // Obtener todos los instructores con información de usuario
     @Query(value = """
         SELECT i.*, u.Username, u.Estatus as usuario_estatus
         FROM INSTRUCTOR i
@@ -78,9 +58,6 @@ public interface InstructorRepository extends JpaRepository<Instructor, String> 
     List<Object[]> findAllInstructoresWithUsuario(@Param("estatus") String estatus,
                                                   @Param("especialidad") String especialidad);
 
-    // ==================== CONSULTAS NATIVAS CON EMAIL (NUEVAS) ====================
-
-    // Obtener instructores con filtros incluyendo email
     @Query(value = """
         SELECT i.*, u.Username, u.Estatus as usuario_estatus
         FROM INSTRUCTOR i
@@ -94,7 +71,6 @@ public interface InstructorRepository extends JpaRepository<Instructor, String> 
                                                          @Param("especialidad") String especialidad,
                                                          @Param("email") String email);
 
-    // Buscar instructores por múltiples criterios
     @Query(value = """
         SELECT * FROM INSTRUCTOR i
         WHERE (:nombre IS NULL OR i.Nombre ILIKE %:nombre%)
@@ -108,21 +84,12 @@ public interface InstructorRepository extends JpaRepository<Instructor, String> 
                                                          @Param("especialidad") String especialidad,
                                                          @Param("estatus") String estatus);
 
-    // Contar instructores activos por especialidad
-    @Query(value = """
-        SELECT i.Especialidad, COUNT(*) as total
-        FROM INSTRUCTOR i
-        WHERE i.Estatus = 'Activo'
-        GROUP BY i.Especialidad
-        ORDER BY total DESC
-        """, nativeQuery = true)
+    @Query("SELECT i.especialidad, COUNT(i) FROM Instructor i WHERE i.estatus = com.example.harmonyGymBack.model.enums.EstatusPersona.Activo GROUP BY i.especialidad")
     List<Object[]> countInstructoresActivosByEspecialidad();
 
-    // Obtener instructores con email nulo o vacío (para migración)
     @Query(value = "SELECT * FROM INSTRUCTOR WHERE Email IS NULL OR Email = ''", nativeQuery = true)
     List<Instructor> findInstructoresSinEmail();
 
-    // Verificar si existe email excluyendo un folio específico (para actualizaciones)
     @Query(value = """
         SELECT COUNT(*) > 0 
         FROM INSTRUCTOR 
@@ -131,9 +98,6 @@ public interface InstructorRepository extends JpaRepository<Instructor, String> 
     boolean existsByEmailAndFolioInstructorNot(@Param("email") String email,
                                                @Param("folioInstructor") String folioInstructor);
 
-    // ==================== CONSULTAS DE ESTADÍSTICAS ====================
-
-    // Contar total de instructores por estatus
     @Query(value = """
         SELECT Estatus, COUNT(*) as total 
         FROM INSTRUCTOR 
@@ -141,7 +105,6 @@ public interface InstructorRepository extends JpaRepository<Instructor, String> 
         """, nativeQuery = true)
     List<Object[]> countInstructoresByEstatus();
 
-    // Obtener instructores recién contratados (últimos 30 días)
     @Query(value = """
         SELECT * FROM INSTRUCTOR 
         WHERE Fecha_Contratacion >= CURRENT_DATE - INTERVAL '30 days'
@@ -149,38 +112,22 @@ public interface InstructorRepository extends JpaRepository<Instructor, String> 
         """, nativeQuery = true)
     List<Instructor> findInstructoresRecientes();
 
-    // Buscar instructores por rango de fechas de contratación
     @Query(value = """
         SELECT * FROM INSTRUCTOR 
-        WHERE Fecha_Contratacion BETWEEN :fechaInicio AND :fechaFin
+        WHERE Fecha_Contratacion BETWEEN CAST(:fechaInicio AS date) AND CAST(:fechaFin AS date)
         ORDER BY Fecha_Contratacion DESC
         """, nativeQuery = true)
     List<Instructor> findInstructoresByRangoFechas(@Param("fechaInicio") String fechaInicio,
                                                    @Param("fechaFin") String fechaFin);
 
-    // ==================== CONSULTAS DE HORARIOS ====================
+    @Query("SELECT i FROM Instructor i WHERE i.estatus = com.example.harmonyGymBack.model.enums.EstatusPersona.Activo AND i.horaEntrada <= :horaInicio AND i.horaSalida >= :horaFin ORDER BY i.nombre ASC")
+    List<Instructor> findInstructoresDisponiblesEnHorario(@Param("horaInicio") java.time.LocalTime horaInicio,
+                                                          @Param("horaFin") java.time.LocalTime horaFin);
 
-    // Buscar instructores activos con horario disponible en un rango específico
-    @Query(value = """
-        SELECT * FROM INSTRUCTOR 
-        WHERE Estatus = 'Activo'
-          AND Hora_Entrada <= :horaInicio
-          AND Hora_Salida >= :horaFin
-        ORDER BY Nombre ASC
-        """, nativeQuery = true)
-    List<Instructor> findInstructoresDisponiblesEnHorario(@Param("horaInicio") String horaInicio,
-                                                          @Param("horaFin") String horaFin);
-
-    // Obtener instructores por especialidad y horario disponible
-    @Query(value = """
-        SELECT * FROM INSTRUCTOR 
-        WHERE Estatus = 'Activo'
-          AND Especialidad ILIKE %:especialidad%
-          AND Hora_Entrada <= :horaInicio
-          AND Hora_Salida >= :horaFin
-        ORDER BY Nombre ASC
-        """, nativeQuery = true)
+    @Query("SELECT i FROM Instructor i WHERE i.estatus = com.example.harmonyGymBack.model.enums.EstatusPersona.Activo AND LOWER(i.especialidad) LIKE LOWER(CONCAT('%', :especialidad, '%')) AND i.horaEntrada <= :horaInicio AND i.horaSalida >= :horaFin ORDER BY i.nombre ASC")
     List<Instructor> findInstructoresByEspecialidadYHorario(@Param("especialidad") String especialidad,
-                                                            @Param("horaInicio") String horaInicio,
-                                                            @Param("horaFin") String horaFin);
+                                                            @Param("horaInicio") java.time.LocalTime horaInicio,
+                                                            @Param("horaFin") java.time.LocalTime horaFin);
+
+    long countByEstatus(EstatusPersona estatus);
 }

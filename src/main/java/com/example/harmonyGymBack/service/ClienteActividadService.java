@@ -1,6 +1,7 @@
 package com.example.harmonyGymBack.service;
 
 import com.example.harmonyGymBack.model.Actividad;
+import com.example.harmonyGymBack.model.enums.EstatusCatalogo;
 import com.example.harmonyGymBack.model.RealizaActividad;
 import com.example.harmonyGymBack.repository.ActividadRepository;
 import com.example.harmonyGymBack.repository.RealizaActividadRepository;
@@ -34,7 +35,7 @@ public class ClienteActividadService {
         // Verificar si la actividad existe y está activa
         Actividad actividad = actividadService.obtenerActividadPorId(idActividad);
 
-        if (!"Activa".equals(actividad.getEstatus())) {
+        if (!EstatusCatalogo.Activa.equals(actividad.getEstatus())) {
             throw new RuntimeException("La actividad no está disponible para inscripción");
         }
 

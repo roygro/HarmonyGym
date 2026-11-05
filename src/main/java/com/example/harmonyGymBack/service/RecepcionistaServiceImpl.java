@@ -1,6 +1,7 @@
 package com.example.harmonyGymBack.service;
 
 import com.example.harmonyGymBack.model.Recepcionista;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import com.example.harmonyGymBack.repository.RecepcionistaRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -94,7 +95,7 @@ public class RecepcionistaServiceImpl {
         recepcionista.setNombre(nombre);
         recepcionista.setTelefono(telefono);
         recepcionista.setEmail(email);
-        recepcionista.setEstatus(estatus != null ? estatus : "Activo");
+        recepcionista.setEstatus(estatus != null ? EstatusPersona.fromString(estatus) : EstatusPersona.Activo);
         recepcionista.setFechaRegistro(LocalDateTime.now());
 
         if (fechaContratacion != null && !fechaContratacion.trim().isEmpty()) {
@@ -172,7 +173,7 @@ public class RecepcionistaServiceImpl {
         }
 
         if (recepcionista.getEstatus() == null) {
-            recepcionista.setEstatus("Activo");
+            recepcionista.setEstatus(EstatusPersona.Activo);
         }
 
         // Validaciones de unicidad
@@ -203,7 +204,7 @@ public class RecepcionistaServiceImpl {
 
     public List<Recepcionista> obtenerRecepcionistasFiltrados(String estatus) {
         if (estatus != null) {
-            return recepcionistaRepository.findByEstatus(estatus);
+            return recepcionistaRepository.findByEstatus(EstatusPersona.fromString(estatus));
         } else {
             return recepcionistaRepository.findAll();
         }
@@ -251,18 +252,20 @@ public class RecepcionistaServiceImpl {
     // ==================== GESTIÓN DE ESTATUS ====================
 
     @Transactional
-    public Recepcionista cambiarEstatusRecepcionista(String idRecepcionista, String nuevoEstatus) {
+    public Recepcionista cambiarEstatusRecepcionista(String idRecepcionista, EstatusPersona nuevoEstatus) {
         Recepcionista recepcionista = obtenerRecepcionistaPorId(idRecepcionista);
         recepcionista.setEstatus(nuevoEstatus);
         return recepcionistaRepository.save(recepcionista);
     }
-
+    public Recepcionista cambiarEstatusRecepcionista(String idRecepcionista, String nuevoEstatusStr) {
+        return cambiarEstatusRecepcionista(idRecepcionista, EstatusPersona.fromString(nuevoEstatusStr));
+    }
     public Recepcionista desactivarRecepcionista(String idRecepcionista) {
-        return cambiarEstatusRecepcionista(idRecepcionista, "Inactivo");
+        return cambiarEstatusRecepcionista(idRecepcionista, EstatusPersona.Inactivo);
     }
 
     public Recepcionista activarRecepcionista(String idRecepcionista) {
-        return cambiarEstatusRecepcionista(idRecepcionista, "Activo");
+        return cambiarEstatusRecepcionista(idRecepcionista, EstatusPersona.Activo);
     }
 
     public void eliminarRecepcionista(String idRecepcionista) {
@@ -314,7 +317,7 @@ public class RecepcionistaServiceImpl {
     }
 
     public List<Recepcionista> obtenerRecepcionistasActivos() {
-        return recepcionistaRepository.findByEstatusOrderByNombreAsc("Activo");
+        return recepcionistaRepository.findByEstatusOrderByNombreAsc(EstatusPersona.Activo);
     }
 
     public List<Recepcionista> buscarRecepcionistasPorNombre(String nombre) {
@@ -322,7 +325,7 @@ public class RecepcionistaServiceImpl {
     }
 
     public Long contarRecepcionistasActivos() {
-        return recepcionistaRepository.countByEstatus("Activo");
+        return recepcionistaRepository.countByEstatus(EstatusPersona.Activo);
     }
 
     public List<Recepcionista> obtenerRecepcionistasContratadosEnRango(LocalDate fechaInicio, LocalDate fechaFin) {
@@ -344,8 +347,8 @@ public class RecepcionistaServiceImpl {
         Map<String, Object> estadisticas = new HashMap<>();
 
         estadisticas.put("totalRecepcionistas", recepcionistaRepository.count());
-        estadisticas.put("recepcionistasActivos", recepcionistaRepository.countByEstatus("Activo"));
-        estadisticas.put("recepcionistasInactivos", recepcionistaRepository.countByEstatus("Inactivo"));
+        estadisticas.put("recepcionistasActivos", recepcionistaRepository.countByEstatus(EstatusPersona.Activo));
+        estadisticas.put("recepcionistasInactivos", recepcionistaRepository.countByEstatus(EstatusPersona.Inactivo));
 
         // Recepcionistas contratados este mes
         LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);

@@ -1,5 +1,6 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusRutina;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -29,13 +30,12 @@ public class RutinaEntity {
     private Integer duracionEstimada;
 
     @Column(name = "estatus")
-    private String estatus;
+    private EstatusRutina estatus = EstatusRutina.Activa;
 
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 
     @Column(name = "folio_instructor", nullable = false)
-
     private String folioInstructor;
 
     // Relación con Instructor (solo para consultas)
@@ -44,7 +44,7 @@ public class RutinaEntity {
     @JoinColumn(name = "folio_instructor", referencedColumnName = "folio_instructor", insertable = false, updatable = false)
     private Instructor instructor;
 
-    // Ejercicios integrados - CORREGIDO: Quitar @OrderColumn
+    // Ejercicios integrados
     @ElementCollection
     @CollectionTable(
             name = "contiene_rutina",
@@ -55,52 +55,18 @@ public class RutinaEntity {
     // Constructores
     public RutinaEntity() {
         this.fechaCreacion = LocalDateTime.now();
-        this.estatus = "Activa";
+        this.estatus = EstatusRutina.Activa;
     }
 
-
-
-
-    // Clase embeddable para los ejercicios de la rutina
-    @Embeddable
-    public static class EjercicioRutina {
-        @Column(name = "id_ejercicio", nullable = false)
-        private String idEjercicio;
-
-        // CORREGIDO: Esta es la única propiedad que mapea a la columna 'orden'
-        @Column(name = "orden", nullable = false)
-        private Integer orden;
-
-        @Column(name = "series_ejercicio")
-        private Integer seriesEjercicio;
-
-        @Column(name = "repeticiones_ejercicio")
-        private Integer repeticionesEjercicio;
-
-        @Column(name = "descanso_ejercicio")
-        private Integer descansoEjercicio;
-
-        @Column(name = "instrucciones")
-        private String instrucciones;
-
-        // Getters y Setters
-        public String getIdEjercicio() { return idEjercicio; }
-        public void setIdEjercicio(String idEjercicio) { this.idEjercicio = idEjercicio; }
-
-        public Integer getOrden() { return orden; }
-        public void setOrden(Integer orden) { this.orden = orden; }
-
-        public Integer getSeriesEjercicio() { return seriesEjercicio; }
-        public void setSeriesEjercicio(Integer seriesEjercicio) { this.seriesEjercicio = seriesEjercicio; }
-
-        public Integer getRepeticionesEjercicio() { return repeticionesEjercicio; }
-        public void setRepeticionesEjercicio(Integer repeticionesEjercicio) { this.repeticionesEjercicio = repeticionesEjercicio; }
-
-        public Integer getDescansoEjercicio() { return descansoEjercicio; }
-        public void setDescansoEjercicio(Integer descansoEjercicio) { this.descansoEjercicio = descansoEjercicio; }
-
-        public String getInstrucciones() { return instrucciones; }
-        public void setInstrucciones(String instrucciones) { this.instrucciones = instrucciones; }
+    public RutinaEntity(String folioRutina, String nombre, String descripcion,
+                        String nivel, String objetivo, String folioInstructor) {
+        this();
+        this.folioRutina = folioRutina;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.nivel = nivel;
+        this.objetivo = objetivo;
+        this.folioInstructor = folioInstructor;
     }
 
     // Getters y Setters
@@ -122,8 +88,9 @@ public class RutinaEntity {
     public Integer getDuracionEstimada() { return duracionEstimada; }
     public void setDuracionEstimada(Integer duracionEstimada) { this.duracionEstimada = duracionEstimada; }
 
-    public String getEstatus() { return estatus; }
-    public void setEstatus(String estatus) { this.estatus = estatus; }
+    public EstatusRutina getEstatus() { return estatus; }
+    public void setEstatus(EstatusRutina estatus) { this.estatus = estatus; }
+    public void setEstatus(String estatus) { this.estatus = EstatusRutina.fromString(estatus); }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
@@ -137,5 +104,58 @@ public class RutinaEntity {
     public List<EjercicioRutina> getEjercicios() { return ejercicios; }
     public void setEjercicios(List<EjercicioRutina> ejercicios) { this.ejercicios = ejercicios; }
 
+    public boolean isActiva() {
+        return EstatusRutina.Activa.equals(this.estatus);
+    }
 
+    @Embeddable
+    public static class EjercicioRutina {
+        @Column(name = "id_ejercicio")
+        private String idEjercicio;
+
+        @Column(name = "orden")
+        private Integer orden;
+
+        @Column(name = "series_ejercicio")
+        private Integer seriesEjercicio;
+
+        @Column(name = "repeticiones_ejercicio")
+        private Integer repeticionesEjercicio;
+
+        @Column(name = "peso_ejercicio")
+        private Double pesoEjercicio;
+
+        @Column(name = "descanso_ejercicio")
+        private Integer descansoEjercicio;
+
+        public EjercicioRutina() {}
+
+        public EjercicioRutina(String idEjercicio, Integer orden, Integer seriesEjercicio,
+                               Integer repeticionesEjercicio, Double pesoEjercicio, Integer descansoEjercicio) {
+            this.idEjercicio = idEjercicio;
+            this.orden = orden;
+            this.seriesEjercicio = seriesEjercicio;
+            this.repeticionesEjercicio = repeticionesEjercicio;
+            this.pesoEjercicio = pesoEjercicio;
+            this.descansoEjercicio = descansoEjercicio;
+        }
+
+        public String getIdEjercicio() { return idEjercicio; }
+        public void setIdEjercicio(String idEjercicio) { this.idEjercicio = idEjercicio; }
+
+        public Integer getOrden() { return orden; }
+        public void setOrden(Integer orden) { this.orden = orden; }
+
+        public Integer getSeriesEjercicio() { return seriesEjercicio; }
+        public void setSeriesEjercicio(Integer seriesEjercicio) { this.seriesEjercicio = seriesEjercicio; }
+
+        public Integer getRepeticionesEjercicio() { return repeticionesEjercicio; }
+        public void setRepeticionesEjercicio(Integer repeticionesEjercicio) { this.repeticionesEjercicio = repeticionesEjercicio; }
+
+        public Double getPesoEjercicio() { return pesoEjercicio; }
+        public void setPesoEjercicio(Double pesoEjercicio) { this.pesoEjercicio = pesoEjercicio; }
+
+        public Integer getDescansoEjercicio() { return descansoEjercicio; }
+        public void setDescansoEjercicio(Integer descansoEjercicio) { this.descansoEjercicio = descansoEjercicio; }
+    }
 }

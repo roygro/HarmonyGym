@@ -1,6 +1,8 @@
 package com.example.harmonyGymBack.service;
 
 import com.example.harmonyGymBack.model.Cliente;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
+import com.example.harmonyGymBack.model.enums.EstatusUsuario;
 import com.example.harmonyGymBack.model.Usuario;
 import com.example.harmonyGymBack.model.AuthResponse;
 import com.example.harmonyGymBack.model.RegisterRequest;
@@ -257,18 +259,18 @@ public class ClienteServiceImpl {
         return new String(passwordArray);
     }
 
-    private void sincronizarEstatusUsuario(String folioCliente, String estatusCliente) {
+    private void sincronizarEstatusUsuario(String folioCliente, EstatusPersona estatusCliente) {
         try {
             Optional<Usuario> usuarioOpt = authService.obtenerUsuarioPorIdPersona(folioCliente);
 
             if (usuarioOpt.isPresent()) {
                 Usuario usuario = usuarioOpt.get();
-                String estatusUsuario = "Activo".equals(estatusCliente) ? "Activo" : "Inactivo";
+                EstatusUsuario estatusUsuario = EstatusPersona.Activo.equals(estatusCliente) ? EstatusUsuario.Activo : EstatusUsuario.Inactivo;
 
                 if (!estatusUsuario.equals(usuario.getEstatus())) {
                     usuario.setEstatus(estatusUsuario);
                     // Si se activa el cliente, resetear intentos de login
-                    if ("Activo".equals(estatusUsuario)) {
+                    if (EstatusUsuario.Activo.equals(estatusUsuario)) {
                         usuario.setIntentosLogin(0);
                         usuario.setFechaBloqueo(null);
                     }
@@ -364,7 +366,7 @@ public class ClienteServiceImpl {
         cliente.setTelefono(telefono);
         cliente.setEmail(email); // Email es obligatorio
         cliente.setGenero(genero);
-        cliente.setEstatus(estatus != null ? estatus : "Activo");
+        cliente.setEstatus(estatus != null ? EstatusPersona.fromString(estatus) : EstatusPersona.Activo);
         cliente.setFechaRegistro(LocalDateTime.now());
 
         if (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty()) {
@@ -431,7 +433,7 @@ public class ClienteServiceImpl {
         }
 
         if (cliente.getEstatus() == null) {
-            cliente.setEstatus("Activo");
+            cliente.setEstatus(EstatusPersona.Activo);
         }
 
         // Validaciones de unicidad
@@ -470,9 +472,9 @@ public class ClienteServiceImpl {
 
     public List<Cliente> obtenerClientesFiltrados(String estatus, String genero) {
         if (estatus != null && genero != null) {
-            return clienteRepository.findByEstatusAndGenero(estatus, genero);
+            return clienteRepository.findByEstatusAndGenero(EstatusPersona.fromString(estatus), genero);
         } else if (estatus != null) {
-            return clienteRepository.findByEstatus(estatus);
+            return clienteRepository.findByEstatus(EstatusPersona.fromString(estatus));
         } else if (genero != null) {
             return clienteRepository.findByGenero(genero);
         } else {
@@ -528,37 +530,35 @@ public class ClienteServiceImpl {
     // ==================== GESTIÓN DE ESTATUS ====================
 
     @Transactional
-    public Cliente cambiarEstatusCliente(String folioCliente, String nuevoEstatus) {
+    public Cliente cambiarEstatusCliente(String folioCliente, EstatusPersona nuevoEstatus) {
         Cliente cliente = obtenerClientePorId(folioCliente);
         cliente.setEstatus(nuevoEstatus);
-
         Cliente clienteActualizado = clienteRepository.save(cliente);
-
-        // ✅ Sincronizar estatus con el usuario
         try {
             sincronizarEstatusUsuario(folioCliente, nuevoEstatus);
         } catch (Exception e) {
-            System.err.println("⚠ Advertencia: No se pudo sincronizar el estatus del usuario: " + e.getMessage());
+            System.err.println("Advertencia: " + e.getMessage());
         }
-
         return clienteActualizado;
     }
-
+    public Cliente cambiarEstatusCliente(String folioCliente, String nuevoEstatusStr) {
+        return cambiarEstatusCliente(folioCliente, EstatusPersona.fromString(nuevoEstatusStr));
+    }
     public Cliente desactivarCliente(String folioCliente) {
-        return cambiarEstatusCliente(folioCliente, "Inactivo");
+        return cambiarEstatusCliente(folioCliente, EstatusPersona.Inactivo);
     }
 
     public Cliente activarCliente(String folioCliente) {
-        return cambiarEstatusCliente(folioCliente, "Activo");
+        return cambiarEstatusCliente(folioCliente, EstatusPersona.Activo);
     }
 
     public void eliminarCliente(String folioCliente) {
         // Primero desactivar el cliente
-        Cliente clienteDesactivado = cambiarEstatusCliente(folioCliente, "Inactivo");
+        Cliente clienteDesactivado = cambiarEstatusCliente(folioCliente, EstatusPersona.Inactivo);
 
         // Luego desactivar el usuario asociado
         try {
-            sincronizarEstatusUsuario(folioCliente, "Inactivo");
+            sincronizarEstatusUsuario(folioCliente, EstatusPersona.Inactivo);
             System.out.println("✅ Cliente y usuario desactivados: " + folioCliente);
         } catch (Exception e) {
             System.err.println("⚠ Cliente desactivado pero no se pudo desactivar el usuario: " + e.getMessage());
@@ -625,7 +625,7 @@ public class ClienteServiceImpl {
     }
 
     public List<Cliente> obtenerClientesActivos() {
-        return clienteRepository.findByEstatusOrderByNombreAsc("Activo");
+        return clienteRepository.findByEstatusOrderByNombreAsc(EstatusPersona.Activo);
     }
 
     public List<Cliente> buscarClientesPorNombre(String nombre) {
@@ -633,7 +633,7 @@ public class ClienteServiceImpl {
     }
 
     public Long contarClientesActivos() {
-        return clienteRepository.countByEstatus("Activo");
+        return clienteRepository.countByEstatus(EstatusPersona.Activo);
     }
 
     public List<Cliente> obtenerClientesConMembresiaActiva() {
@@ -677,8 +677,8 @@ public class ClienteServiceImpl {
         Map<String, Object> estadisticas = new HashMap<>();
 
         estadisticas.put("totalClientes", clienteRepository.count());
-        estadisticas.put("clientesActivos", clienteRepository.countByEstatus("Activo"));
-        estadisticas.put("clientesInactivos", clienteRepository.countByEstatus("Inactivo"));
+        estadisticas.put("clientesActivos", clienteRepository.countByEstatus(EstatusPersona.Activo));
+        estadisticas.put("clientesInactivos", clienteRepository.countByEstatus(EstatusPersona.Inactivo));
         estadisticas.put("clientesConMembresiaActiva", clienteRepository.findClientesConMembresiaActiva().size());
 
         return estadisticas;

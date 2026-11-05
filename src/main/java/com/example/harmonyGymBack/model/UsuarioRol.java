@@ -1,5 +1,6 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -23,18 +24,19 @@ public class UsuarioRol {
     private LocalDateTime fechaAsignacion;
 
     @Column(name = "estatus")
-    private String estatus = "Activo";
+    private EstatusPersona estatus = EstatusPersona.Activo;
 
     // Constructores
     public UsuarioRol() {
         this.fechaAsignacion = LocalDateTime.now();
+        this.estatus = EstatusPersona.Activo;
     }
 
-    public UsuarioRol(String idUsuario, String tipoUsuario, String idRol, String estatus) {
+    public UsuarioRol(String idUsuario, String tipoUsuario, String idRol, EstatusPersona estatus) {
         this.idUsuario = idUsuario;
         this.tipoUsuario = tipoUsuario;
         this.idRol = idRol;
-        this.estatus = estatus;
+        this.estatus = estatus != null ? estatus : EstatusPersona.Activo;
         this.fechaAsignacion = LocalDateTime.now();
     }
 
@@ -51,6 +53,7 @@ public class UsuarioRol {
     public LocalDateTime getFechaAsignacion() { return fechaAsignacion; }
     public void setFechaAsignacion(LocalDateTime fechaAsignacion) { this.fechaAsignacion = fechaAsignacion; }
 
-    public String getEstatus() { return estatus; }
-    public void setEstatus(String estatus) { this.estatus = estatus; }
+    public EstatusPersona getEstatus() { return estatus; }
+    public void setEstatus(EstatusPersona estatus) { this.estatus = estatus; }
+    public void setEstatus(String estatus) { this.estatus = EstatusPersona.fromString(estatus); }
 }

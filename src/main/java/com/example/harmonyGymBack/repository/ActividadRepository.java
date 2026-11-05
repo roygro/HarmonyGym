@@ -1,6 +1,7 @@
 package com.example.harmonyGymBack.repository;
 
 import com.example.harmonyGymBack.model.Actividad;
+import com.example.harmonyGymBack.model.enums.EstatusCatalogo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,57 +14,57 @@ import java.util.List;
 @Repository
 public interface ActividadRepository extends JpaRepository<Actividad, String> {
 
-    // Buscar actividades por nombre
     List<Actividad> findByNombreActividadContainingIgnoreCase(String nombre);
 
-    // Buscar actividades por estatus
-    List<Actividad> findByEstatus(String estatus);
+    List<Actividad> findByEstatus(EstatusCatalogo estatus);
 
-    // Buscar actividades por lugar
     List<Actividad> findByLugarContainingIgnoreCase(String lugar);
 
-    // Buscar actividades activas ordenadas por fecha y hora
-    List<Actividad> findByEstatusOrderByFechaActividadAscHoraInicioAsc(String estatus);
+    List<Actividad> findByEstatusOrderByFechaActividadAscHoraInicioAsc(EstatusCatalogo estatus);
 
-    // Buscar actividades por instructor
-    List<Actividad> findByFolioInstructorAndEstatus(String folioInstructor, String estatus);
+    List<Actividad> findByFolioInstructorAndEstatus(String folioInstructor, EstatusCatalogo estatus);
 
-    // Buscar actividades por fecha
-    List<Actividad> findByFechaActividadAndEstatus(LocalDate fecha, String estatus);
+    List<Actividad> findByFechaActividadAndEstatus(LocalDate fecha, EstatusCatalogo estatus);
 
-    // Buscar actividades por instructor y fecha
-    List<Actividad> findByFolioInstructorAndFechaActividadAndEstatus(String folioInstructor, LocalDate fecha, String estatus);
+    List<Actividad> findByFolioInstructorAndFechaActividadAndEstatus(String folioInstructor, LocalDate fecha, EstatusCatalogo estatus);
 
-    // Verificar conflicto de horarios considerando fecha
-    @Query("SELECT a FROM Actividad a WHERE a.lugar = :lugar AND a.fechaActividad = :fecha AND a.estatus = 'Activa' " +
-            "AND ((a.horaInicio BETWEEN :horaInicio AND :horaFin) OR " +
-            "(a.horaFin BETWEEN :horaInicio AND :horaFin) OR " +
-            "(:horaInicio BETWEEN a.horaInicio AND a.horaFin))")
+    @Query("SELECT a FROM Actividad a WHERE a.lugar = :lugar AND a.fechaActividad = :fecha AND a.estatus = com.example.harmonyGymBack.model.enums.EstatusCatalogo.Activa " +
+            "AND ((a.horaInicio < :horaFin AND a.horaFin > :horaInicio))")
     List<Actividad> findConflictingActivities(@Param("lugar") String lugar,
                                               @Param("fecha") LocalDate fecha,
                                               @Param("horaInicio") LocalTime horaInicio,
                                               @Param("horaFin") LocalTime horaFin);
 
-    // Verificar conflicto de horarios excluyendo una actividad específica
-    @Query("SELECT a FROM Actividad a WHERE a.lugar = :lugar AND a.fechaActividad = :fecha AND a.estatus = 'Activa' " +
+    @Query("SELECT a FROM Actividad a WHERE a.lugar = :lugar AND a.fechaActividad = :fecha AND a.estatus = com.example.harmonyGymBack.model.enums.EstatusCatalogo.Activa " +
             "AND a.idActividad != :excludeId " +
-            "AND ((a.horaInicio BETWEEN :horaInicio AND :horaFin) OR " +
-            "(a.horaFin BETWEEN :horaInicio AND :horaFin) OR " +
-            "(:horaInicio BETWEEN a.horaInicio AND a.horaFin))")
+            "AND ((a.horaInicio < :horaFin AND a.horaFin > :horaInicio))")
     List<Actividad> findConflictingActivitiesExcluding(@Param("lugar") String lugar,
                                                        @Param("fecha") LocalDate fecha,
                                                        @Param("horaInicio") LocalTime horaInicio,
                                                        @Param("horaFin") LocalTime horaFin,
                                                        @Param("excludeId") String excludeId);
 
-    // Contar actividades activas
-    Long countByEstatus(String estatus);
-    // Buscar por estatus y lugar (case insensitive)
-    List<Actividad> findByEstatusAndLugarContainingIgnoreCase(String estatus, String lugar);
+    @Query("SELECT a FROM Actividad a WHERE a.folioInstructor = :folioInstructor AND a.fechaActividad = :fecha AND a.estatus = com.example.harmonyGymBack.model.enums.EstatusCatalogo.Activa " +
+            "AND ((a.horaInicio < :horaFin AND a.horaFin > :horaInicio))")
+    List<Actividad> findConflictingInstructorActivities(@Param("folioInstructor") String folioInstructor,
+                                                         @Param("fecha") LocalDate fecha,
+                                                         @Param("horaInicio") LocalTime horaInicio,
+                                                         @Param("horaFin") LocalTime horaFin);
 
-    // Verificar existencia
+    @Query("SELECT a FROM Actividad a WHERE a.folioInstructor = :folioInstructor AND a.fechaActividad = :fecha AND a.estatus = com.example.harmonyGymBack.model.enums.EstatusCatalogo.Activa " +
+            "AND a.idActividad != :excludeId " +
+            "AND ((a.horaInicio < :horaFin AND a.horaFin > :horaInicio))")
+    List<Actividad> findConflictingInstructorActivitiesExcluding(@Param("folioInstructor") String folioInstructor,
+                                                                 @Param("fecha") LocalDate fecha,
+                                                                 @Param("horaInicio") LocalTime horaInicio,
+                                                                 @Param("horaFin") LocalTime horaFin,
+                                                                 @Param("excludeId") String excludeId);
+
+    Long countByEstatus(EstatusCatalogo estatus);
+
+    List<Actividad> findByEstatusAndLugarContainingIgnoreCase(EstatusCatalogo estatus, String lugar);
+
     boolean existsById(String idActividad);
 
-    // Obtener actividades futuras
-    List<Actividad> findByFechaActividadGreaterThanEqualAndEstatusOrderByFechaActividadAscHoraInicioAsc(LocalDate fecha, String estatus);
+    List<Actividad> findByFechaActividadGreaterThanEqualAndEstatusOrderByFechaActividadAscHoraInicioAsc(LocalDate fecha, EstatusCatalogo estatus);
 }

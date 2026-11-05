@@ -1,5 +1,6 @@
 package com.example.harmonyGymBack.service;
 import com.example.harmonyGymBack.model.EjercicioEntity;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import com.example.harmonyGymBack.repository.EjercicioRepository;
 import com.example.harmonyGymBack.repository.InstructorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,7 +82,7 @@ public class EjercicioServiceImpl {
         if (ejercicio.isPresent()) {
             // Cambiar estatus a Inactivo en lugar de eliminar
             EjercicioEntity ej = ejercicio.get();
-            ej.setEstatus("Inactivo");
+            ej.setEstatus(EstatusPersona.Inactivo);
             ejercicioRepository.save(ej);
             return true;
         }
