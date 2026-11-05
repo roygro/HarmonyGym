@@ -15,7 +15,10 @@ public class PaypalController {
     @Autowired
     private PaypalService paypalService;
 
-    // Crear orden de pago
+    /**
+     * @deprecated Usar POST /api/ventas/membresia con metodoPago=PAYPAL donde el total es calculado por el servidor.
+     */
+    @Deprecated
     @PostMapping("/crear-orden")
     public ResponseEntity<Map<String, Object>> crearOrden(@RequestBody Map<String, String> body) {
         String monto = body.get("monto");
@@ -24,7 +27,10 @@ public class PaypalController {
         return ResponseEntity.ok(orden);
     }
 
-    // Capturar (confirmar) el pago
+    /**
+     * @deprecated Usar POST /api/ventas/{idPago}/paypal/capturar que actualiza el estado de la venta y membresía atómicamente.
+     */
+    @Deprecated
     @PostMapping("/capturar-orden/{orderId}")
     public ResponseEntity<Map<String, Object>> capturarOrden(@PathVariable String orderId) {
         Map<String, Object> resultado = paypalService.capturarOrden(orderId);

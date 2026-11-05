@@ -1,10 +1,14 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusPago;
+import com.example.harmonyGymBack.model.enums.MetodoPago;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "vende") // Nombre exacto de tu tabla
+@Table(name = "vende")
 public class Pago {
 
     @Id
@@ -12,50 +16,78 @@ public class Pago {
     @Column(name = "id_venta")
     private Integer idVenta;
 
-    @Column(name = "id_recepcionista", nullable = false, length = 50)
-    private String idRecepcionista;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_recepcionista", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Recepcionista recepcionista;
 
-    @Column(name = "codigo_producto", nullable = true, length = 50)
-    private String codigoProducto;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "codigo_producto", nullable = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Producto producto;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folio_cliente", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Cliente cliente;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_membresia_cliente", nullable = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private MembresiaCliente membresiaCliente;
 
     @Column(name = "fecha_venta", nullable = false)
-    private LocalDateTime fechaVenta;
+    private LocalDateTime fechaVenta = LocalDateTime.now();
 
     @Column(name = "cantidad", nullable = false)
-    private Integer cantidad;
+    private Integer cantidad = 1;
 
     @Column(name = "precio_unitario", nullable = false)
-    private Double precioUnitario;
+    private Double precioUnitario = 0.0;
 
     @Column(name = "total", nullable = false)
-    private Double total;
+    private Double total = 0.0;
 
-    @Column(name = "folio_cliente", nullable = false, length = 50)
-    private String folioCliente;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "metodo_pago")
+    private MetodoPago metodoPago = MetodoPago.EFECTIVO;
 
-    @Column(name = "tipo_pago", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estatus_pago")
+    private EstatusPago estatusPago = EstatusPago.PAGADO;
+
+    @Column(name = "monto_recibido", precision = 10, scale = 2)
+    private BigDecimal montoRecibido;
+
+    @Column(name = "cambio", precision = 10, scale = 2)
+    private BigDecimal cambio;
+
+    @Column(name = "referencia_externa", length = 255)
+    private String referenciaExterna;
+
+    @Column(name = "tipo_pago")
     private String tipoPago;
 
     @Column(name = "id_membresia", nullable = true)
     private String idMembresia;
 
-
     // Constructores
     public Pago() {
         this.fechaVenta = LocalDateTime.now();
-        this.cantidad = 1; // Por defecto 1
+        this.cantidad = 1;
+        this.metodoPago = MetodoPago.EFECTIVO;
+        this.estatusPago = EstatusPago.PAGADO;
     }
 
-    public Pago(String idRecepcionista, String codigoProducto,
-                Integer cantidad, Double precioUnitario, Double total,
-                String folioCliente) {
+    public Pago(Recepcionista recepcionista, Producto producto, Integer cantidad,
+                Double precioUnitario, Double total, Cliente cliente) {
         this();
-        this.idRecepcionista = idRecepcionista;
-        this.codigoProducto = codigoProducto;
+        this.recepcionista = recepcionista;
+        this.producto = producto;
         this.cantidad = cantidad;
         this.precioUnitario = precioUnitario;
         this.total = total;
-        this.folioCliente = folioCliente;
+        this.cliente = cliente;
     }
 
     // Getters y Setters
@@ -67,20 +99,36 @@ public class Pago {
         this.idVenta = idVenta;
     }
 
-    public String getIdRecepcionista() {
-        return idRecepcionista;
+    public Recepcionista getRecepcionista() {
+        return recepcionista;
     }
 
-    public void setIdRecepcionista(String idRecepcionista) {
-        this.idRecepcionista = idRecepcionista;
+    public void setRecepcionista(Recepcionista recepcionista) {
+        this.recepcionista = recepcionista;
     }
 
-    public String getCodigoProducto() {
-        return codigoProducto;
+    public Producto getProducto() {
+        return producto;
     }
 
-    public void setCodigoProducto(String codigoProducto) {
-        this.codigoProducto = codigoProducto;
+    public void setProducto(Producto producto) {
+        this.producto = producto;
+    }
+
+    public Cliente getCliente() {
+        return cliente;
+    }
+
+    public void setCliente(Cliente cliente) {
+        this.cliente = cliente;
+    }
+
+    public MembresiaCliente getMembresiaCliente() {
+        return membresiaCliente;
+    }
+
+    public void setMembresiaCliente(MembresiaCliente membresiaCliente) {
+        this.membresiaCliente = membresiaCliente;
     }
 
     public LocalDateTime getFechaVenta() {
@@ -115,21 +163,57 @@ public class Pago {
         this.total = total;
     }
 
-    public String getFolioCliente() {
-        return folioCliente;
+    public MetodoPago getMetodoPago() {
+        return metodoPago;
     }
 
-    public void setFolioCliente(String folioCliente) {
-        this.folioCliente = folioCliente;
+    public void setMetodoPago(MetodoPago metodoPago) {
+        this.metodoPago = metodoPago;
     }
 
-    // Agregar getters y setters
+    public EstatusPago getEstatusPago() {
+        return estatusPago;
+    }
+
+    public void setEstatusPago(EstatusPago estatusPago) {
+        this.estatusPago = estatusPago;
+    }
+
+    public BigDecimal getMontoRecibido() {
+        return montoRecibido;
+    }
+
+    public void setMontoRecibido(BigDecimal montoRecibido) {
+        this.montoRecibido = montoRecibido;
+    }
+
+    public BigDecimal getCambio() {
+        return cambio;
+    }
+
+    public void setCambio(BigDecimal cambio) {
+        this.cambio = cambio;
+    }
+
+    public String getReferenciaExterna() {
+        return referenciaExterna;
+    }
+
+    public void setReferenciaExterna(String referenciaExterna) {
+        this.referenciaExterna = referenciaExterna;
+    }
+
     public String getTipoPago() {
-        return tipoPago;
+        return tipoPago != null ? tipoPago : (metodoPago != null ? metodoPago.name() : null);
     }
 
     public void setTipoPago(String tipoPago) {
         this.tipoPago = tipoPago;
+        if (tipoPago != null) {
+            try {
+                this.metodoPago = MetodoPago.fromString(tipoPago);
+            } catch (Exception ignored) {}
+        }
     }
 
     public String getIdMembresia() {
@@ -140,18 +224,35 @@ public class Pago {
         this.idMembresia = idMembresia;
     }
 
-    // Método toString para debugging
-    @Override
-    public String toString() {
-        return "Pago{" +
-                "idVenta=" + idVenta +
-                ", idRecepcionista='" + idRecepcionista + '\'' +
-                ", codigoProducto='" + codigoProducto + '\'' +
-                ", fechaVenta=" + fechaVenta +
-                ", cantidad=" + cantidad +
-                ", precioUnitario=" + precioUnitario +
-                ", total=" + total +
-                ", folioCliente='" + folioCliente + '\'' +
-                '}';
+        @Transient
+    private String tempCodigoProducto;
+    @Transient
+    private String tempFolioCliente;
+    @Transient
+    private String tempIdRecepcionista;
+
+    public void setCodigoProducto(String codigoProducto) {
+        this.tempCodigoProducto = codigoProducto;
+    }
+
+    public void setFolioCliente(String folioCliente) {
+        this.tempFolioCliente = folioCliente;
+    }
+
+    public void setIdRecepcionista(String idRecepcionista) {
+        this.tempIdRecepcionista = idRecepcionista;
+    }
+
+    // Métodos de compatibilidad para evitar romper código existente
+    public String getFolioCliente() {
+        return cliente != null ? cliente.getFolioCliente() : tempFolioCliente;
+    }
+
+    public String getIdRecepcionista() {
+        return recepcionista != null ? recepcionista.getIdRecepcionista() : tempIdRecepcionista;
+    }
+
+    public String getCodigoProducto() {
+        return producto != null ? producto.getCodigo() : tempCodigoProducto;
     }
 }

@@ -1,7 +1,16 @@
 package com.example.harmonyGymBack.service;
 
+import com.example.harmonyGymBack.model.Cliente;
 import com.example.harmonyGymBack.model.Pago;
+import com.example.harmonyGymBack.model.Producto;
+import com.example.harmonyGymBack.model.Recepcionista;
+import com.example.harmonyGymBack.model.enums.EstatusPago;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
+import com.example.harmonyGymBack.model.enums.MetodoPago;
+import com.example.harmonyGymBack.repository.ClienteRepository;
 import com.example.harmonyGymBack.repository.PagoRepository;
+import com.example.harmonyGymBack.repository.ProductoRepository;
+import com.example.harmonyGymBack.repository.RecepcionistaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,42 +24,68 @@ public class PagoService {
     @Autowired
     private PagoRepository pagoRepository;
 
+    @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
+    private RecepcionistaRepository recepcionistaRepository;
+
+    @Autowired
+    private ProductoRepository productoRepository;
+
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // Crear un nuevo pago (SIN DTO)
     public Pago crearPago(Pago pago) {
-        // Asegurar valores por defecto
         if (pago.getCantidad() == null) {
             pago.setCantidad(1);
         }
         if (pago.getFechaVenta() == null) {
             pago.setFechaVenta(LocalDateTime.now());
         }
+        if (pago.getMetodoPago() == null) {
+            pago.setMetodoPago(MetodoPago.EFECTIVO);
+        }
+        if (pago.getEstatusPago() == null) {
+            pago.setEstatusPago(EstatusPago.PAGADO);
+        }
+
+        // Resolver relaciones si vinieron como Strings o nulas
+        if (pago.getCliente() == null && pago.getFolioCliente() != null) {
+            clienteRepository.findById(pago.getFolioCliente()).ifPresent(pago::setCliente);
+        }
+        if (pago.getRecepcionista() == null) {
+            if (pago.getIdRecepcionista() != null) {
+                recepcionistaRepository.findById(pago.getIdRecepcionista()).ifPresent(pago::setRecepcionista);
+            }
+            if (pago.getRecepcionista() == null) {
+                recepcionistaRepository.findByEstatus(EstatusPersona.Activo).stream().findFirst()
+                        .ifPresent(pago::setRecepcionista);
+            }
+        }
+        if (pago.getProducto() == null && pago.getCodigoProducto() != null) {
+            productoRepository.findById(pago.getCodigoProducto()).ifPresent(pago::setProducto);
+        }
+
         return pagoRepository.save(pago);
     }
 
-    // Obtener todos los pagos
     public List<Pago> obtenerTodosLosPagos() {
         return pagoRepository.findAllByOrderByFechaVentaDesc();
     }
 
-    // Obtener pagos por cliente
     public List<Pago> obtenerPagosPorCliente(String folioCliente) {
         return pagoRepository.findByFolioCliente(folioCliente);
     }
 
-    // Obtener pagos por recepcionista
     public List<Pago> obtenerPagosPorRecepcionista(String idRecepcionista) {
         return pagoRepository.findByIdRecepcionista(idRecepcionista);
     }
 
-    // Obtener pago por ID
     public Pago obtenerPagoPorId(Integer id) {
         return pagoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pago no encontrado con ID: " + id));
     }
 
-    // Obtener estadísticas del día
     public EstadisticasDiaDTO obtenerEstadisticasDelDia() {
         Double totalVentas = pagoRepository.findTotalVentasHoy();
         Long cantidadVentas = pagoRepository.countVentasHoy();
@@ -61,7 +96,6 @@ public class PagoService {
         return new EstadisticasDiaDTO(totalVentas, cantidadVentas);
     }
 
-    // Obtener pagos por rango de fechas
     public List<Pago> obtenerPagosPorRangoFechas(String fechaInicio, String fechaFin) {
         LocalDateTime inicio = LocalDateTime.parse(fechaInicio, formatter);
         LocalDateTime fin = LocalDateTime.parse(fechaFin, formatter);
@@ -69,7 +103,6 @@ public class PagoService {
         return pagoRepository.findByFechaVentaBetween(inicio, fin);
     }
 
-    // DTO interno para estadísticas
     public static class EstadisticasDiaDTO {
         private Double totalVentas;
         private Long cantidadVentas;
@@ -81,7 +114,6 @@ public class PagoService {
             this.cantidadVentas = cantidadVentas;
         }
 
-        // Getters y Setters
         public Double getTotalVentas() { return totalVentas; }
         public void setTotalVentas(Double totalVentas) { this.totalVentas = totalVentas; }
 

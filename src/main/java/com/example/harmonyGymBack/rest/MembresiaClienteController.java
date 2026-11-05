@@ -22,6 +22,22 @@ public class MembresiaClienteController {
     @Autowired
     private MembresiaClienteService membresiaClienteService;
 
+    @Autowired
+    private com.example.harmonyGymBack.service.CalculadoraPrecioService calculadoraPrecioService;
+
+        @GetMapping("/cotizar")
+    public ResponseEntity<?> cotizar(
+            @RequestParam String idMembresia,
+            @RequestParam Long idPlanPago,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio) {
+        try {
+            var res = calculadoraPrecioService.cotizar(idMembresia, idPlanPago, fechaInicio != null ? fechaInicio : LocalDate.now());
+            return ResponseEntity.ok(res.toMap());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     // ==================== ASIGNAR MEMBRESÍA A CLIENTE ====================
 
     // ✅ MODIFICADO: Ahora recibe idPlanPago
