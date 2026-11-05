@@ -12,11 +12,16 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/actividades")
 @CrossOrigin(origins = "*")
 public class ActividadController {
+
+    @Autowired
+    private com.example.harmonyGymBack.service.ClienteActividadService clienteActividadService;
 
     @Autowired
     private ActividadServiceImpl actividadService;
@@ -137,6 +142,39 @@ public class ActividadController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
             return new ResponseEntity<>("Error interno del servidor", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    
+    // REGISTRAR ASISTENCIA (INSTRUCTOR)
+    @PutMapping("/{id}/asistencia")
+    public ResponseEntity<?> registrarAsistencia(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            String folioInstructor = (String) payload.get("folioInstructor");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> asistencias = (List<Map<String, Object>>) payload.get("asistencias");
+            if (asistencias == null) asistencias = Collections.emptyList();
+
+            var resultado = clienteActividadService.registrarAsistencia(id, folioInstructor, asistencias);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Asistencia registrada exitosamente");
+            response.put("data", resultado);
+
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error interno al registrar asistencia: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 

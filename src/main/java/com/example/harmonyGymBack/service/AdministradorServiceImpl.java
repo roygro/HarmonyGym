@@ -18,6 +18,24 @@ import java.util.Optional;
 public class AdministradorServiceImpl {
 
     @Autowired
+    private com.example.harmonyGymBack.repository.UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private com.example.harmonyGymBack.service.AuthService authService;
+
+    public void validarProteccionAdmin(String folioAdminTarget, String folioAdminSolicitante) {
+        long totalAdmins = administradorRepository.count();
+        if (totalAdmins <= 1) {
+            throw new RuntimeException("No se puede eliminar o desactivar al único administrador activo en el sistema");
+        }
+        if (folioAdminSolicitante != null && !folioAdminSolicitante.trim().isEmpty() &&
+            folioAdminSolicitante.equalsIgnoreCase(folioAdminTarget)) {
+            throw new RuntimeException("Un administrador no puede eliminarse ni desactivarse a sí mismo");
+        }
+    }
+
+
+    @Autowired
     private AdministradorRepository administradorRepository;
 
     @PersistenceContext
@@ -222,8 +240,20 @@ public class AdministradorServiceImpl {
 
     @Transactional
     public void eliminarAdministrador(String folioAdmin) {
+        eliminarAdministrador(folioAdmin, null);
+    }
+
+    @Transactional
+    public void eliminarAdministrador(String folioAdmin, String folioSolicitante) {
+        validarProteccionAdmin(folioAdmin, folioSolicitante);
         Administrador administrador = obtenerAdministradorPorId(folioAdmin);
         administradorRepository.delete(administrador);
+        if (authService != null) {
+            authService.obtenerUsuarioPorIdPersona(folioAdmin).ifPresent(u -> {
+                u.setEstatus(com.example.harmonyGymBack.model.enums.EstatusUsuario.Inactivo);
+                if (usuarioRepository != null) usuarioRepository.save(u);
+            });
+        }
         System.out.println("✅ Administrador eliminado: " + folioAdmin);
     }
 

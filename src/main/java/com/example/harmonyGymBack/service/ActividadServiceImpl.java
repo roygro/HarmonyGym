@@ -15,6 +15,9 @@ import java.util.Optional;
 public class ActividadServiceImpl {
 
     @Autowired
+    private com.example.harmonyGymBack.repository.RealizaActividadRepository realizaActividadRepository;
+
+    @Autowired
     private ActividadRepository actividadRepository;
 
     private String generarIdActividad() {
@@ -160,10 +163,21 @@ public class ActividadServiceImpl {
         return actividadRepository.save(actividadExistente);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public Actividad cambiarEstatusActividad(String idActividad, EstatusCatalogo nuevoEstatus) {
         Actividad actividad = obtenerActividadPorId(idActividad);
         actividad.setEstatus(nuevoEstatus);
-        return actividadRepository.save(actividad);
+        Actividad guardada = actividadRepository.save(actividad);
+
+        if (EstatusCatalogo.Inactiva.equals(nuevoEstatus)) {
+            List<com.example.harmonyGymBack.model.RealizaActividad> inscripciones = 
+                realizaActividadRepository.findByIdActividadAndEstatus(idActividad, com.example.harmonyGymBack.model.enums.EstatusInscripcion.Inscrito);
+            for (com.example.harmonyGymBack.model.RealizaActividad ra : inscripciones) {
+                ra.cancelarInscripcion("Clase cancelada por el gimnasio");
+                realizaActividadRepository.save(ra);
+            }
+        }
+        return guardada;
     }
 
     public Actividad desactivarActividad(String idActividad) {

@@ -3,7 +3,9 @@ package com.example.harmonyGymBack.repository;
 import com.example.harmonyGymBack.model.Actividad;
 import com.example.harmonyGymBack.model.enums.EstatusCatalogo;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +15,10 @@ import java.util.List;
 
 @Repository
 public interface ActividadRepository extends JpaRepository<Actividad, String> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM Actividad a WHERE a.idActividad = :id")
+    java.util.Optional<Actividad> findByIdWithLock(@Param("id") String id);
+
 
     List<Actividad> findByNombreActividadContainingIgnoreCase(String nombre);
 

@@ -138,6 +138,11 @@ public class MembresiaCliente {
         this.fechaActualizacion = fechaActualizacion;
     }
 
+    public boolean isVigente() {
+        return EstatusMembresiaCliente.Activa.equals(this.estatus) &&
+                fechaFin != null && (LocalDate.now().isBefore(fechaFin) || LocalDate.now().isEqual(fechaFin));
+    }
+
     public boolean isActiva() {
         return EstatusMembresiaCliente.Activa.equals(this.estatus) &&
                 fechaFin != null && (LocalDate.now().isBefore(fechaFin) || LocalDate.now().isEqual(fechaFin));

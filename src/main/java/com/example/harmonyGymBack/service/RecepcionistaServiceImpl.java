@@ -20,6 +20,35 @@ import java.util.Optional;
 public class RecepcionistaServiceImpl {
 
     @Autowired
+    private com.example.harmonyGymBack.repository.UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private com.example.harmonyGymBack.service.AuthService authService;
+
+    private void sincronizarEstatusUsuario(String idRecepcionista, EstatusPersona estatusRecepcionista) {
+        try {
+            java.util.Optional<com.example.harmonyGymBack.model.Usuario> usuarioOpt = authService.obtenerUsuarioPorIdPersona(idRecepcionista);
+            if (usuarioOpt.isPresent()) {
+                com.example.harmonyGymBack.model.Usuario usuario = usuarioOpt.get();
+                com.example.harmonyGymBack.model.enums.EstatusUsuario estatusUsuario = 
+                    EstatusPersona.Activo.equals(estatusRecepcionista) ? 
+                    com.example.harmonyGymBack.model.enums.EstatusUsuario.Activo : 
+                    com.example.harmonyGymBack.model.enums.EstatusUsuario.Inactivo;
+
+                usuario.setEstatus(estatusUsuario);
+                if (com.example.harmonyGymBack.model.enums.EstatusUsuario.Activo.equals(estatusUsuario)) {
+                    usuario.setIntentosLogin(0);
+                    usuario.setFechaBloqueo(null);
+                }
+                usuarioRepository.save(usuario);
+            }
+        } catch (Exception e) {
+            System.err.println("Advertencia sincronizando usuario de recepcionista: " + e.getMessage());
+        }
+    }
+
+
+    @Autowired
     private RecepcionistaRepository recepcionistaRepository;
 
     @PersistenceContext

@@ -235,7 +235,13 @@ public class AuthService {
     private boolean asignarRolPorDefecto(Usuario usuario) {
         try {
             // Buscar rol por defecto para el tipo de usuario
-            Optional<Rol> rolOpt = rolRepository.findRolPorDefecto(usuario.getTipoUsuario());
+            Optional<Rol> rolOpt = rolRepository.findByNombreRolIgnoreCase(usuario.getTipoUsuario());
+            if (rolOpt.isEmpty()) {
+                rolOpt = rolRepository.findByNombreRol(usuario.getTipoUsuario());
+            }
+            if (rolOpt.isEmpty()) {
+                rolOpt = rolRepository.findRolPorDefecto(usuario.getTipoUsuario());
+            }
 
             if (rolOpt.isPresent()) {
                 Rol rol = rolOpt.get();

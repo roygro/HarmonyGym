@@ -4,6 +4,7 @@ import com.example.harmonyGymBack.model.MembresiaCliente;
 import com.example.harmonyGymBack.model.enums.EstatusMembresiaCliente;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -39,7 +40,8 @@ public interface MembresiaClienteRepository extends JpaRepository<MembresiaClien
     List<MembresiaCliente> findMembresiasExpiradas(@Param("hoy") LocalDate hoy);
 
     // Actualizar estatus de membresías expiradas
-    @Modifying
+    @Modifying(clearAutomatically = true)
+    @Transactional
     @Query("UPDATE MembresiaCliente mc SET mc.estatus = com.example.harmonyGymBack.model.enums.EstatusMembresiaCliente.Expirada, mc.fechaActualizacion = CURRENT_TIMESTAMP WHERE mc.fechaFin < :hoy AND mc.estatus = com.example.harmonyGymBack.model.enums.EstatusMembresiaCliente.Activa")
     int actualizarMembresiasExpiradas(@Param("hoy") LocalDate hoy);
 
