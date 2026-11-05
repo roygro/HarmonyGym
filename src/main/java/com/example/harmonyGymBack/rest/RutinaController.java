@@ -4,7 +4,6 @@ import com.example.harmonyGymBack.model.Cliente;
 import com.example.harmonyGymBack.model.RutinaEntity;
 import com.example.harmonyGymBack.model.enums.EstatusRutina;
 import com.example.harmonyGymBack.service.RutinaServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,8 +16,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class RutinaController {
 
-    @Autowired
-    private RutinaServiceImpl rutinaService;
+    private final RutinaServiceImpl rutinaService;
+
+    public RutinaController(RutinaServiceImpl rutinaService) {
+        this.rutinaService = rutinaService;
+    }
+
 
     @GetMapping
     public List<RutinaEntity> getAllRutinas() {

@@ -23,8 +23,12 @@ public class ActividadController {
     @Autowired
     private com.example.harmonyGymBack.service.ClienteActividadService clienteActividadService;
 
-    @Autowired
-    private ActividadServiceImpl actividadService;
+    private final ActividadServiceImpl actividadService;
+
+    public ActividadController(ActividadServiceImpl actividadService) {
+        this.actividadService = actividadService;
+    }
+
 
     // GUARDAR - Crear nueva actividad
     @PostMapping("/guardar")

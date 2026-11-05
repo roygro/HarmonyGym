@@ -11,7 +11,6 @@ import com.example.harmonyGymBack.repository.ClienteRepository;
 import com.example.harmonyGymBack.repository.EjercicioRepository;
 import com.example.harmonyGymBack.repository.InstructorRepository;
 import com.example.harmonyGymBack.repository.RutinaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
@@ -19,20 +18,24 @@ import java.util.*;
 @Service
 public class RutinaServiceImpl {
 
-    @Autowired
-    private RutinaRepository rutinaRepository;
+    private final RutinaRepository rutinaRepository;
 
-    @Autowired
-    private AsignacionRutinaRepository asignacionRutinaRepository;
+    private final AsignacionRutinaRepository asignacionRutinaRepository;
 
-    @Autowired
-    private EjercicioRepository ejercicioRepository;
+    private final EjercicioRepository ejercicioRepository;
 
-    @Autowired
-    private InstructorRepository instructorRepository;
+    private final InstructorRepository instructorRepository;
 
-    @Autowired
-    private ClienteRepository clienteRepository;
+    private final ClienteRepository clienteRepository;
+
+    public RutinaServiceImpl(RutinaRepository rutinaRepository, AsignacionRutinaRepository asignacionRutinaRepository, EjercicioRepository ejercicioRepository, InstructorRepository instructorRepository, ClienteRepository clienteRepository) {
+        this.rutinaRepository = rutinaRepository;
+        this.asignacionRutinaRepository = asignacionRutinaRepository;
+        this.ejercicioRepository = ejercicioRepository;
+        this.instructorRepository = instructorRepository;
+        this.clienteRepository = clienteRepository;
+    }
+
 
     public List<RutinaEntity> findAll() {
         return rutinaRepository.findAll();

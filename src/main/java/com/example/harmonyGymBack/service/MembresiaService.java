@@ -4,7 +4,6 @@ import com.example.harmonyGymBack.model.Membresia;
 import com.example.harmonyGymBack.model.TipoMembresia;
 import com.example.harmonyGymBack.model.enums.EstatusCatalogo;
 import com.example.harmonyGymBack.repository.MembresiaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,8 +16,12 @@ import java.util.Optional;
 @Transactional
 public class MembresiaService {
 
-    @Autowired
-    private MembresiaRepository membresiaRepository;
+    private final MembresiaRepository membresiaRepository;
+
+    public MembresiaService(MembresiaRepository membresiaRepository) {
+        this.membresiaRepository = membresiaRepository;
+    }
+
 
     // Crear nueva membresía
     public Membresia crearMembresia(Membresia membresia) {

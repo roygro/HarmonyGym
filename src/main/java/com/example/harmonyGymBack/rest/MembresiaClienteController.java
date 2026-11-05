@@ -19,8 +19,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class MembresiaClienteController {
 
-    @Autowired
-    private MembresiaClienteService membresiaClienteService;
+    private final MembresiaClienteService membresiaClienteService;
+
+    public MembresiaClienteController(MembresiaClienteService membresiaClienteService) {
+        this.membresiaClienteService = membresiaClienteService;
+    }
+
 
     @Autowired
     private com.example.harmonyGymBack.service.CalculadoraPrecioService calculadoraPrecioService;

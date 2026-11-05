@@ -2,7 +2,6 @@ package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.Instructor;
 import com.example.harmonyGymBack.service.InstructorServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +15,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class InstructorController {
 
-    @Autowired
-    private InstructorServiceImpl instructorService;
+    private final InstructorServiceImpl instructorService;
+
+    public InstructorController(InstructorServiceImpl instructorService) {
+        this.instructorService = instructorService;
+    }
+
 
     // ==================== CREAR INSTRUCTOR ====================
 

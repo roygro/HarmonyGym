@@ -3,7 +3,6 @@ import com.example.harmonyGymBack.model.EjercicioEntity;
 import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import com.example.harmonyGymBack.repository.EjercicioRepository;
 import com.example.harmonyGymBack.repository.InstructorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
@@ -13,11 +12,15 @@ import java.util.Optional;
 @Service
 public class EjercicioServiceImpl {
 
-    @Autowired
-    private EjercicioRepository ejercicioRepository;
+    private final EjercicioRepository ejercicioRepository;
 
-    @Autowired
-    private InstructorRepository instructorRepository;
+    private final InstructorRepository instructorRepository;
+
+    public EjercicioServiceImpl(EjercicioRepository ejercicioRepository, InstructorRepository instructorRepository) {
+        this.ejercicioRepository = ejercicioRepository;
+        this.instructorRepository = instructorRepository;
+    }
+
 
     public List<EjercicioEntity> findAll() {
         return ejercicioRepository.findAll();

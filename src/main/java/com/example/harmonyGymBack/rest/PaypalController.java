@@ -1,7 +1,6 @@
 package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.service.PaypalService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,8 +11,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class PaypalController {
 
-    @Autowired
-    private PaypalService paypalService;
+    private final PaypalService paypalService;
+
+    public PaypalController(PaypalService paypalService) {
+        this.paypalService = paypalService;
+    }
+
 
     /**
      * @deprecated Usar POST /api/ventas/membresia con metodoPago=PAYPAL donde el total es calculado por el servidor.

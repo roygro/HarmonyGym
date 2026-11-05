@@ -2,7 +2,6 @@ package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.enums.MetodoPago;
 import com.example.harmonyGymBack.service.VentaService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +16,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class VentaController {
 
-    @Autowired
-    private VentaService ventaService;
+    private final VentaService ventaService;
+
+    public VentaController(VentaService ventaService) {
+        this.ventaService = ventaService;
+    }
+
 
     public static class VentaMembresiaRequest {
         public String folioCliente;

@@ -17,8 +17,12 @@ public class ActividadServiceImpl {
     @Autowired
     private com.example.harmonyGymBack.repository.RealizaActividadRepository realizaActividadRepository;
 
-    @Autowired
-    private ActividadRepository actividadRepository;
+    private final ActividadRepository actividadRepository;
+
+    public ActividadServiceImpl(ActividadRepository actividadRepository) {
+        this.actividadRepository = actividadRepository;
+    }
+
 
     private String generarIdActividad() {
         List<Actividad> todasActividades = actividadRepository.findAll();

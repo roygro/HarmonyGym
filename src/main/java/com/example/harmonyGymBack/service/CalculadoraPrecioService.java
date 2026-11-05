@@ -4,7 +4,6 @@ import com.example.harmonyGymBack.model.Membresia;
 import com.example.harmonyGymBack.model.PlanPago;
 import com.example.harmonyGymBack.repository.MembresiaRepository;
 import com.example.harmonyGymBack.repository.PlanPagoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,11 +15,15 @@ import java.util.Map;
 @Service
 public class CalculadoraPrecioService {
 
-    @Autowired
-    private MembresiaRepository membresiaRepository;
+    private final MembresiaRepository membresiaRepository;
 
-    @Autowired
-    private PlanPagoRepository planPagoRepository;
+    private final PlanPagoRepository planPagoRepository;
+
+    public CalculadoraPrecioService(MembresiaRepository membresiaRepository, PlanPagoRepository planPagoRepository) {
+        this.membresiaRepository = membresiaRepository;
+        this.planPagoRepository = planPagoRepository;
+    }
+
 
     public static class ResultadoCalculo {
         private BigDecimal precioBase;

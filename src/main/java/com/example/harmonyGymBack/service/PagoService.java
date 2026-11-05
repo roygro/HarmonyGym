@@ -11,7 +11,6 @@ import com.example.harmonyGymBack.repository.ClienteRepository;
 import com.example.harmonyGymBack.repository.PagoRepository;
 import com.example.harmonyGymBack.repository.ProductoRepository;
 import com.example.harmonyGymBack.repository.RecepcionistaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,17 +20,21 @@ import java.util.List;
 @Service
 public class PagoService {
 
-    @Autowired
-    private PagoRepository pagoRepository;
+    private final PagoRepository pagoRepository;
 
-    @Autowired
-    private ClienteRepository clienteRepository;
+    private final ClienteRepository clienteRepository;
 
-    @Autowired
-    private RecepcionistaRepository recepcionistaRepository;
+    private final RecepcionistaRepository recepcionistaRepository;
 
-    @Autowired
-    private ProductoRepository productoRepository;
+    private final ProductoRepository productoRepository;
+
+    public PagoService(PagoRepository pagoRepository, ClienteRepository clienteRepository, RecepcionistaRepository recepcionistaRepository, ProductoRepository productoRepository) {
+        this.pagoRepository = pagoRepository;
+        this.clienteRepository = clienteRepository;
+        this.recepcionistaRepository = recepcionistaRepository;
+        this.productoRepository = productoRepository;
+    }
+
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 

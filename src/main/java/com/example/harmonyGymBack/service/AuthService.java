@@ -1,12 +1,14 @@
 package com.example.harmonyGymBack.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.example.harmonyGymBack.model.*;
 import com.example.harmonyGymBack.model.enums.EstatusUsuario;
 import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import com.example.harmonyGymBack.repository.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,15 +20,21 @@ import java.util.Optional;
 
 @Service
 public class AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
 
-    @Autowired
-    private UsuarioRolRepository usuarioRolRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    @Autowired
-    private RolRepository rolRepository;
+    private final UsuarioRolRepository usuarioRolRepository;
+
+    private final RolRepository rolRepository;
+
+    public AuthService(UsuarioRepository usuarioRepository, UsuarioRolRepository usuarioRolRepository, RolRepository rolRepository) {
+        this.usuarioRepository = usuarioRepository;
+        this.usuarioRolRepository = usuarioRolRepository;
+        this.rolRepository = rolRepository;
+    }
+
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -36,12 +44,12 @@ public class AuthService {
     @Transactional
     public AuthResponse autenticarUsuario(String username, String password) {
         try {
-            System.out.println("🔐 Intentando autenticar usuario: " + username);
+            log.info("🔐 Intentando autenticar usuario: " + username);
 
             Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(username);
 
             if (usuarioOpt.isEmpty()) {
-                System.out.println("❌ Usuario no encontrado: " + username);
+                log.info("❌ Usuario no encontrado: " + username);
                 return new AuthResponse(false, "Usuario no encontrado");
             }
 
@@ -49,12 +57,12 @@ public class AuthService {
 
             // Verificar estatus del usuario
             if ("Bloqueado".equals(usuario.getEstatus())) {
-                System.out.println("❌ Usuario bloqueado: " + username);
+                log.info("❌ Usuario bloqueado: " + username);
                 return new AuthResponse(false, "Usuario bloqueado. Contacte al administrador.");
             }
 
             if (EstatusUsuario.Inactivo.equals(usuario.getEstatus())) {
-                System.out.println("❌ Usuario inactivo: " + username);
+                log.info("❌ Usuario inactivo: " + username);
                 return new AuthResponse(false, "Usuario inactivo");
             }
 
@@ -70,11 +78,11 @@ public class AuthService {
                 // Bloquear usuario después de 5 intentos fallidos
                 if (usuario.getIntentosLogin() >= 5) {
                     usuarioRepository.bloquearUsuario(username, LocalDateTime.now());
-                    System.out.println("❌ Usuario bloqueado por demasiados intentos fallidos: " + username);
+                    log.info("❌ Usuario bloqueado por demasiados intentos fallidos: " + username);
                     return new AuthResponse(false, "Demasiados intentos fallidos. Usuario bloqueado.");
                 }
 
-                System.out.println("❌ Contraseña incorrecta para usuario: " + username);
+                log.info("❌ Contraseña incorrecta para usuario: " + username);
                 return new AuthResponse(false, "Credenciales incorrectas");
             }
 
@@ -86,12 +94,12 @@ public class AuthService {
             response.setSuccess(true);
             response.setMessage("Login exitoso");
 
-            System.out.println("✅ Login exitoso para usuario: " + username);
+            log.info("✅ Login exitoso para usuario: " + username);
             return response;
 
         } catch (Exception e) {
-            System.err.println("❌ Error durante autenticación: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Error durante autenticación: " + e.getMessage());
+            log.error("Error: ", e);
             return new AuthResponse(false, "Error interno del servidor");
         }
     }
@@ -127,7 +135,7 @@ public class AuthService {
             response.setNombreCompleto(nombreCompleto);
 
         } catch (Exception e) {
-            System.err.println("❌ Error al obtener información adicional del usuario: " + e.getMessage());
+            log.error("❌ Error al obtener información adicional del usuario: " + e.getMessage());
         }
 
         return response;
@@ -165,7 +173,7 @@ public class AuthService {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Error al obtener nombre completo: " + e.getMessage());
+            log.error("❌ Error al obtener nombre completo: " + e.getMessage());
         }
 
         return "Usuario";
@@ -176,18 +184,18 @@ public class AuthService {
     @Transactional
     public AuthResponse registrarUsuario(RegisterRequest registerRequest) {
         try {
-            System.out.println("🚀 Iniciando registro de usuario: " + registerRequest.getUsername());
+            log.info("🚀 Iniciando registro de usuario: " + registerRequest.getUsername());
 
             // Verificar si el username ya existe
             if (usuarioRepository.existsByUsername(registerRequest.getUsername())) {
-                System.out.println("❌ Username ya existe: " + registerRequest.getUsername());
+                log.info("❌ Username ya existe: " + registerRequest.getUsername());
                 return new AuthResponse(false, "El nombre de usuario ya está en uso");
             }
 
             // Verificar si ya existe un usuario para esta persona y tipo
             if (usuarioRepository.existsByIdPersonaAndTipoUsuario(
                     registerRequest.getIdPersona(), registerRequest.getTipoUsuario())) {
-                System.out.println("❌ Ya existe un usuario para esta persona y tipo: " + registerRequest.getIdPersona());
+                log.info("❌ Ya existe un usuario para esta persona y tipo: " + registerRequest.getIdPersona());
                 return new AuthResponse(false, "Ya existe un usuario para esta persona con el tipo especificado");
             }
 
@@ -206,13 +214,13 @@ public class AuthService {
             usuario.setFechaCreacion(LocalDateTime.now());
 
             Usuario usuarioGuardado = usuarioRepository.save(usuario);
-            System.out.println("✅ Usuario guardado: " + idUsuario);
+            log.info("✅ Usuario guardado: " + idUsuario);
 
             // Asignar rol por defecto según el tipo de usuario
             boolean rolAsignado = asignarRolPorDefecto(usuarioGuardado);
 
             if (!rolAsignado) {
-                System.out.println("⚠ No se pudo asignar rol por defecto para: " + registerRequest.getTipoUsuario());
+                log.info("⚠ No se pudo asignar rol por defecto para: " + registerRequest.getTipoUsuario());
             }
 
             // Obtener información completa para la respuesta
@@ -220,12 +228,12 @@ public class AuthService {
             response.setSuccess(true);
             response.setMessage("Usuario registrado exitosamente");
 
-            System.out.println("✅ Registro completado para: " + registerRequest.getUsername());
+            log.info("✅ Registro completado para: " + registerRequest.getUsername());
             return response;
 
         } catch (Exception e) {
-            System.err.println("❌ Error durante el registro: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Error durante el registro: " + e.getMessage());
+            log.error("Error: ", e);
             return new AuthResponse(false, "Error durante el registro: " + e.getMessage());
         }
     }
@@ -253,15 +261,15 @@ public class AuthService {
                 usuarioRol.setEstatus(EstatusPersona.Activo);
 
                 usuarioRolRepository.save(usuarioRol);
-                System.out.println("✅ Rol asignado: " + rol.getNombreRol() + " para usuario: " + usuario.getUsername());
+                log.info("✅ Rol asignado: " + rol.getNombreRol() + " para usuario: " + usuario.getUsername());
                 return true;
             }
 
-            System.err.println("❌ No se encontró rol por defecto para tipo: " + usuario.getTipoUsuario());
+            log.error("❌ No se encontró rol por defecto para tipo: " + usuario.getTipoUsuario());
             return false;
 
         } catch (Exception e) {
-            System.err.println("❌ Error al asignar rol por defecto: " + e.getMessage());
+            log.error("❌ Error al asignar rol por defecto: " + e.getMessage());
             return false;
         }
     }
@@ -270,13 +278,13 @@ public class AuthService {
 
     private String generarIdUsuario() {
         try {
-            System.out.println("🔍 Buscando último ID de usuario...");
+            log.info("🔍 Buscando último ID de usuario...");
 
             // Usar el método optimizado del repositorio
             String ultimoId = usuarioRepository.findUltimoIdUsuario();
 
             if (ultimoId == null) {
-                System.out.println("✅ No hay usuarios, empezando con USR001");
+                log.info("✅ No hay usuarios, empezando con USR001");
                 return "USR001";
             }
 
@@ -288,28 +296,28 @@ public class AuthService {
                     int nuevoNumero = numero + 1;
                     String nuevoId = String.format("USR%03d", nuevoNumero);
 
-                    System.out.println("📊 Último ID encontrado: " + ultimoId);
-                    System.out.println("🎯 Nuevo ID generado: " + nuevoId);
+                    log.info("📊 Último ID encontrado: " + ultimoId);
+                    log.info("🎯 Nuevo ID generado: " + nuevoId);
 
                     return nuevoId;
                 } catch (NumberFormatException e) {
-                    System.err.println("⚠ ID con formato inválido: " + ultimoId);
+                    log.error("⚠ ID con formato inválido: " + ultimoId);
                 }
             }
 
             // Fallback: contar usuarios
             long totalUsuarios = usuarioRepository.count();
             String idFallback = String.format("USR%03d", totalUsuarios + 1);
-            System.out.println("🔄 Usando fallback: " + idFallback);
+            log.info("🔄 Usando fallback: " + idFallback);
             return idFallback;
 
         } catch (Exception e) {
-            System.err.println("❌ Error crítico al generar ID: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Error crítico al generar ID: " + e.getMessage());
+            log.error("Error: ", e);
 
             long totalUsuarios = usuarioRepository.count();
             String idFallback = String.format("USR%03d", totalUsuarios + 1);
-            System.out.println("🔄 Usando fallback por error: " + idFallback);
+            log.info("🔄 Usando fallback por error: " + idFallback);
             return idFallback;
         }
     }
@@ -334,12 +342,12 @@ public class AuthService {
 
             response.put("success", true);
             response.put("message", "Contraseña actualizada exitosamente");
-            System.out.println("✅ Contraseña cambiada para usuario: " + username);
+            log.info("✅ Contraseña cambiada para usuario: " + username);
 
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error al cambiar contraseña: " + e.getMessage());
-            System.err.println("❌ Error al cambiar contraseña: " + e.getMessage());
+            log.error("❌ Error al cambiar contraseña: " + e.getMessage());
         }
 
         return response;
@@ -388,12 +396,12 @@ public class AuthService {
 
             response.put("success", true);
             response.put("message", "Usuario desbloqueado exitosamente");
-            System.out.println("✅ Usuario desbloqueado: " + username);
+            log.info("✅ Usuario desbloqueado: " + username);
 
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error al desbloquear usuario: " + e.getMessage());
-            System.err.println("❌ Error al desbloquear usuario: " + e.getMessage());
+            log.error("❌ Error al desbloquear usuario: " + e.getMessage());
         }
 
         return response;

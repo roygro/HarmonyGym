@@ -3,7 +3,6 @@ package com.example.harmonyGymBack.rest;
 import com.example.harmonyGymBack.model.Membresia;
 import com.example.harmonyGymBack.model.TipoMembresia;
 import com.example.harmonyGymBack.service.MembresiaService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,8 +14,12 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class MembresiaController {
 
-    @Autowired
-    private MembresiaService membresiaService;
+    private final MembresiaService membresiaService;
+
+    public MembresiaController(MembresiaService membresiaService) {
+        this.membresiaService = membresiaService;
+    }
+
 
     // CREAR nueva membresía
     @PostMapping

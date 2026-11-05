@@ -12,7 +12,6 @@ import com.example.harmonyGymBack.repository.ClienteRepository;
 import com.example.harmonyGymBack.repository.MembresiaClienteRepository;
 import com.example.harmonyGymBack.repository.MembresiaRepository;
 import com.example.harmonyGymBack.repository.PlanPagoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,17 +25,21 @@ import java.util.Optional;
 @Transactional
 public class MembresiaClienteService {
 
-    @Autowired
-    private MembresiaClienteRepository membresiaClienteRepository;
+    private final MembresiaClienteRepository membresiaClienteRepository;
 
-    @Autowired
-    private ClienteRepository clienteRepository;
+    private final ClienteRepository clienteRepository;
 
-    @Autowired
-    private MembresiaRepository membresiaRepository;
+    private final MembresiaRepository membresiaRepository;
 
-    @Autowired
-    private PlanPagoRepository planPagoRepository;
+    private final PlanPagoRepository planPagoRepository;
+
+    public MembresiaClienteService(MembresiaClienteRepository membresiaClienteRepository, ClienteRepository clienteRepository, MembresiaRepository membresiaRepository, PlanPagoRepository planPagoRepository) {
+        this.membresiaClienteRepository = membresiaClienteRepository;
+        this.clienteRepository = clienteRepository;
+        this.membresiaRepository = membresiaRepository;
+        this.planPagoRepository = planPagoRepository;
+    }
+
 
     public MembresiaCliente asignarMembresiaACliente(String folioCliente, String idMembresia, Long idPlanPago, LocalDate fechaInicio) {
         Cliente cliente = clienteRepository.findById(folioCliente)

@@ -1,7 +1,6 @@
 package com.example.harmonyGymBack.rest;
 import com.example.harmonyGymBack.model.EjercicioEntity;
 import com.example.harmonyGymBack.service.EjercicioServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -11,8 +10,12 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class EjercicioController {
 
-    @Autowired
-    private EjercicioServiceImpl ejercicioService;
+    private final EjercicioServiceImpl ejercicioService;
+
+    public EjercicioController(EjercicioServiceImpl ejercicioService) {
+        this.ejercicioService = ejercicioService;
+    }
+
 
     @GetMapping
     public List<EjercicioEntity> getAllEjercicios() {

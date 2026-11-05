@@ -2,7 +2,6 @@ package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.Pago;
 import com.example.harmonyGymBack.service.PagoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,8 +12,12 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class PagoController {
 
-    @Autowired
-    private PagoService pagoService;
+    private final PagoService pagoService;
+
+    public PagoController(PagoService pagoService) {
+        this.pagoService = pagoService;
+    }
+
 
     // POST - Crear nuevo pago
     @PostMapping

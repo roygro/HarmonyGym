@@ -5,7 +5,6 @@ import com.example.harmonyGymBack.model.enums.*;
 import com.example.harmonyGymBack.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,32 +20,36 @@ public class VentaService {
 
     private static final Logger log = LoggerFactory.getLogger(VentaService.class);
 
-    @Autowired
-    private ClienteRepository clienteRepository;
+    private final ClienteRepository clienteRepository;
 
-    @Autowired
-    private MembresiaRepository membresiaRepository;
+    private final MembresiaRepository membresiaRepository;
 
-    @Autowired
-    private PlanPagoRepository planPagoRepository;
+    private final PlanPagoRepository planPagoRepository;
 
-    @Autowired
-    private MembresiaClienteRepository membresiaClienteRepository;
+    private final MembresiaClienteRepository membresiaClienteRepository;
 
-    @Autowired
-    private PagoRepository pagoRepository;
+    private final PagoRepository pagoRepository;
 
-    @Autowired
-    private ProductoRepository productoRepository;
+    private final ProductoRepository productoRepository;
 
-    @Autowired
-    private RecepcionistaRepository recepcionistaRepository;
+    private final RecepcionistaRepository recepcionistaRepository;
 
-    @Autowired
-    private CalculadoraPrecioService calculadoraPrecioService;
+    private final CalculadoraPrecioService calculadoraPrecioService;
 
-    @Autowired
-    private PaypalService paypalService;
+    private final PaypalService paypalService;
+
+    public VentaService(ClienteRepository clienteRepository, MembresiaRepository membresiaRepository, PlanPagoRepository planPagoRepository, MembresiaClienteRepository membresiaClienteRepository, PagoRepository pagoRepository, ProductoRepository productoRepository, RecepcionistaRepository recepcionistaRepository, CalculadoraPrecioService calculadoraPrecioService, PaypalService paypalService) {
+        this.clienteRepository = clienteRepository;
+        this.membresiaRepository = membresiaRepository;
+        this.planPagoRepository = planPagoRepository;
+        this.membresiaClienteRepository = membresiaClienteRepository;
+        this.pagoRepository = pagoRepository;
+        this.productoRepository = productoRepository;
+        this.recepcionistaRepository = recepcionistaRepository;
+        this.calculadoraPrecioService = calculadoraPrecioService;
+        this.paypalService = paypalService;
+    }
+
 
     private Recepcionista obtenerRecepcionistaCobro() {
         List<Recepcionista> activos = recepcionistaRepository.findByEstatus(EstatusPersona.Activo);

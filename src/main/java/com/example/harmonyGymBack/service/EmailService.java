@@ -1,6 +1,8 @@
 package com.example.harmonyGymBack.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -11,9 +13,15 @@ import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class EmailService {
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    @Autowired
-    private JavaMailSender mailSender;
+
+    private final JavaMailSender mailSender;
+
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
 
     @Value("${app.email.from}")
     private String fromEmail;
@@ -31,7 +39,7 @@ public class EmailService {
                 throw new RuntimeException("El email del cliente es requerido");
             }
 
-            System.out.println("📧 Preparando envío de email a: " + emailCliente);
+            log.info("📧 Preparando envío de email a: " + emailCliente);
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -44,13 +52,13 @@ public class EmailService {
             helper.setText(contenido, true);
 
             mailSender.send(message);
-            System.out.println("✅ Email enviado exitosamente a: " + emailCliente);
+            log.info("✅ Email enviado exitosamente a: " + emailCliente);
 
         } catch (MessagingException e) {
-            System.err.println("❌ Error de mensajería al enviar email: " + e.getMessage());
+            log.error("❌ Error de mensajería al enviar email: " + e.getMessage());
             throw new RuntimeException("Error al enviar las credenciales por email: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("❌ Error inesperado al enviar email: " + e.getMessage());
+            log.error("❌ Error inesperado al enviar email: " + e.getMessage());
             throw new RuntimeException("Error inesperado al enviar email: " + e.getMessage());
         }
     }
@@ -132,7 +140,7 @@ public class EmailService {
                 throw new RuntimeException("El email del instructor es requerido");
             }
 
-            System.out.println("📧 Preparando envío de email a instructor: " + emailInstructor);
+            log.info("📧 Preparando envío de email a instructor: " + emailInstructor);
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -145,13 +153,13 @@ public class EmailService {
             helper.setText(contenido, true);
 
             mailSender.send(message);
-            System.out.println("✅ Email enviado exitosamente a instructor: " + emailInstructor);
+            log.info("✅ Email enviado exitosamente a instructor: " + emailInstructor);
 
         } catch (MessagingException e) {
-            System.err.println("❌ Error de mensajería al enviar email a instructor: " + e.getMessage());
+            log.error("❌ Error de mensajería al enviar email a instructor: " + e.getMessage());
             throw new RuntimeException("Error al enviar las credenciales por email: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("❌ Error inesperado al enviar email a instructor: " + e.getMessage());
+            log.error("❌ Error inesperado al enviar email a instructor: " + e.getMessage());
             throw new RuntimeException("Error inesperado al enviar email: " + e.getMessage());
         }
     }

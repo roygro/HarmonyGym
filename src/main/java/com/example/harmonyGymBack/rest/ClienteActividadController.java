@@ -3,7 +3,6 @@ package com.example.harmonyGymBack.rest;
 import com.example.harmonyGymBack.model.Actividad;
 import com.example.harmonyGymBack.model.RealizaActividad;
 import com.example.harmonyGymBack.service.ClienteActividadService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +16,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class ClienteActividadController {
 
-    @Autowired
-    private ClienteActividadService clienteActividadService;
+    private final ClienteActividadService clienteActividadService;
+
+    public ClienteActividadController(ClienteActividadService clienteActividadService) {
+        this.clienteActividadService = clienteActividadService;
+    }
+
 
     // ==================== INSCRIPCIÓN ====================
 

@@ -1,10 +1,12 @@
 package com.example.harmonyGymBack.rest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.example.harmonyGymBack.model.AuthRequest;
 import com.example.harmonyGymBack.model.AuthResponse;
 import com.example.harmonyGymBack.model.RegisterRequest;
 import com.example.harmonyGymBack.service.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,16 +17,22 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
 public class AuthController {
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
-    @Autowired
-    private AuthService authService;
+
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
 
     // ==================== LOGIN ====================
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest authRequest) {
         try {
-            System.out.println("🔐 Solicitud de login recibida para: " + authRequest.getUsername());
+            log.info("🔐 Solicitud de login recibida para: " + authRequest.getUsername());
 
             AuthResponse response = authService.autenticarUsuario(
                     authRequest.getUsername(),
@@ -38,7 +46,7 @@ public class AuthController {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Error en endpoint de login: " + e.getMessage());
+            log.error("❌ Error en endpoint de login: " + e.getMessage());
             AuthResponse errorResponse = new AuthResponse(false, "Error interno del servidor");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
@@ -49,9 +57,9 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest registerRequest) {
         try {
-            System.out.println("🚀 Solicitud de registro recibida para: " + registerRequest.getUsername());
-            System.out.println("📋 Tipo de usuario: " + registerRequest.getTipoUsuario());
-            System.out.println("👤 ID Persona: " + registerRequest.getIdPersona());
+            log.info("🚀 Solicitud de registro recibida para: " + registerRequest.getUsername());
+            log.info("📋 Tipo de usuario: " + registerRequest.getTipoUsuario());
+            log.info("👤 ID Persona: " + registerRequest.getIdPersona());
 
             // Validaciones básicas
             if (registerRequest.getUsername() == null || registerRequest.getUsername().trim().isEmpty()) {
@@ -83,7 +91,7 @@ public class AuthController {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Error en endpoint de registro: " + e.getMessage());
+            log.error("❌ Error en endpoint de registro: " + e.getMessage());
             AuthResponse errorResponse = new AuthResponse(false, "Error interno del servidor: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
@@ -96,7 +104,7 @@ public class AuthController {
             @RequestParam String username,
             @RequestParam String nuevaPassword) {
         try {
-            System.out.println("🔑 Solicitud de cambio de contraseña para: " + username);
+            log.info("🔑 Solicitud de cambio de contraseña para: " + username);
 
             Map<String, Object> response = authService.cambiarPassword(username, nuevaPassword);
 
@@ -107,7 +115,7 @@ public class AuthController {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Error en cambio de contraseña: " + e.getMessage());
+            log.error("❌ Error en cambio de contraseña: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     Map.of("success", false, "message", "Error interno del servidor")
             );
@@ -120,14 +128,14 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> verificarDisponibilidadUsername(
             @RequestParam String username) {
         try {
-            System.out.println("🔍 Verificando disponibilidad de username: " + username);
+            log.info("🔍 Verificando disponibilidad de username: " + username);
 
             Map<String, Object> response = authService.verificarDisponibilidadUsername(username);
 
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            System.err.println("❌ Error verificando username: " + e.getMessage());
+            log.error("❌ Error verificando username: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     Map.of("disponible", false, "message", "Error interno del servidor")
             );

@@ -2,7 +2,6 @@ package com.example.harmonyGymBack.controller;
 
 import com.example.harmonyGymBack.model.Producto;
 import com.example.harmonyGymBack.service.ProductoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,8 +12,12 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class ProductoController {
 
-    @Autowired
-    private ProductoService productoService;
+    private final ProductoService productoService;
+
+    public ProductoController(ProductoService productoService) {
+        this.productoService = productoService;
+    }
+
 
     // ===== ENDPOINTS BÁSICOS =====
 

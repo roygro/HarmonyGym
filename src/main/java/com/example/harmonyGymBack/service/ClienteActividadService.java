@@ -12,7 +12,6 @@ import com.example.harmonyGymBack.repository.ActividadRepository;
 import com.example.harmonyGymBack.repository.ClienteRepository;
 import com.example.harmonyGymBack.repository.MembresiaClienteRepository;
 import com.example.harmonyGymBack.repository.RealizaActividadRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,20 +23,24 @@ import java.util.stream.Collectors;
 @Service
 public class ClienteActividadService {
 
-    @Autowired
-    private RealizaActividadRepository realizaActividadRepository;
+    private final RealizaActividadRepository realizaActividadRepository;
 
-    @Autowired
-    private ActividadRepository actividadRepository;
+    private final ActividadRepository actividadRepository;
 
-    @Autowired
-    private ClienteRepository clienteRepository;
+    private final ClienteRepository clienteRepository;
 
-    @Autowired
-    private MembresiaClienteRepository membresiaClienteRepository;
+    private final MembresiaClienteRepository membresiaClienteRepository;
 
-    @Autowired
-    private ActividadServiceImpl actividadService;
+    private final ActividadServiceImpl actividadService;
+
+    public ClienteActividadService(RealizaActividadRepository realizaActividadRepository, ActividadRepository actividadRepository, ClienteRepository clienteRepository, MembresiaClienteRepository membresiaClienteRepository, ActividadServiceImpl actividadService) {
+        this.realizaActividadRepository = realizaActividadRepository;
+        this.actividadRepository = actividadRepository;
+        this.clienteRepository = clienteRepository;
+        this.membresiaClienteRepository = membresiaClienteRepository;
+        this.actividadService = actividadService;
+    }
+
 
     // ==================== INSCRIPCIÓN A ACTIVIDADES ====================
 

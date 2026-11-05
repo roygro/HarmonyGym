@@ -1,5 +1,8 @@
 package com.example.harmonyGymBack.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.example.harmonyGymBack.model.Instructor;
 import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import com.example.harmonyGymBack.model.enums.EstatusUsuario;
@@ -11,7 +14,6 @@ import com.example.harmonyGymBack.repository.UsuarioRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,18 +26,24 @@ import java.util.Optional;
 
 @Service
 public class InstructorServiceImpl {
+    private static final Logger log = LoggerFactory.getLogger(InstructorServiceImpl.class);
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
 
-    @Autowired
-    private AuthService authService;
+    private final UsuarioRepository usuarioRepository;
 
-    @Autowired
-    private InstructorRepository instructorRepository;
+    private final AuthService authService;
 
-    @Autowired
-    private EmailService emailService;
+    private final InstructorRepository instructorRepository;
+
+    private final EmailService emailService;
+
+    public InstructorServiceImpl(UsuarioRepository usuarioRepository, AuthService authService, InstructorRepository instructorRepository, EmailService emailService) {
+        this.usuarioRepository = usuarioRepository;
+        this.authService = authService;
+        this.instructorRepository = instructorRepository;
+        this.emailService = emailService;
+    }
+
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -44,12 +52,12 @@ public class InstructorServiceImpl {
 
     private void crearUsuarioParaInstructor(Instructor instructor) {
         try {
-            System.out.println("👤 Creando usuario automático para instructor: " + instructor.getFolioInstructor());
+            log.info("👤 Creando usuario automático para instructor: " + instructor.getFolioInstructor());
 
             // Verificar si ya existe un usuario para este instructor
             Optional<Usuario> usuarioExistente = authService.obtenerUsuarioPorIdPersona(instructor.getFolioInstructor());
             if (usuarioExistente.isPresent()) {
-                System.out.println("ℹ️ Ya existe un usuario para este instructor: " + instructor.getFolioInstructor());
+                log.info("ℹ️ Ya existe un usuario para este instructor: " + instructor.getFolioInstructor());
                 return;
             }
 
@@ -70,10 +78,10 @@ public class InstructorServiceImpl {
             AuthResponse authResponse = authService.registrarUsuario(registerRequest);
 
             if (authResponse.isSuccess()) {
-                System.out.println("✅ Usuario creado exitosamente:");
-                System.out.println("   📧 Username: " + username);
-                System.out.println("   🔑 Password temporal: " + passwordTemporal);
-                System.out.println("   👤 ID Usuario: " + authResponse.getIdUsuario());
+                log.info("✅ Usuario creado exitosamente:");
+                log.info("   📧 Username: " + username);
+                log.info("   🔑 Password temporal: " + passwordTemporal);
+                log.info("   👤 ID Usuario: " + authResponse.getIdUsuario());
 
                 // ✅ ENVIAR CREDENCIALES POR EMAIL
                 if (instructor.getEmail() != null && !instructor.getEmail().trim().isEmpty()) {
@@ -84,13 +92,13 @@ public class InstructorServiceImpl {
                                 username,
                                 passwordTemporal
                         );
-                        System.out.println("✅ Credenciales enviadas por email a: " + instructor.getEmail());
+                        log.info("✅ Credenciales enviadas por email a: " + instructor.getEmail());
                     } catch (Exception e) {
-                        System.err.println("⚠️ No se pudieron enviar las credenciales por email: " + e.getMessage());
+                        log.error("⚠️ No se pudieron enviar las credenciales por email: " + e.getMessage());
                         // No revertimos la creación por fallo en el email
                     }
                 } else {
-                    System.out.println("⚠️ Instructor no tiene email, no se enviaron credenciales");
+                    log.info("⚠️ Instructor no tiene email, no se enviaron credenciales");
                 }
 
             } else {
@@ -98,7 +106,7 @@ public class InstructorServiceImpl {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Error al crear usuario automático: " + e.getMessage());
+            log.error("❌ Error al crear usuario automático: " + e.getMessage());
             throw new RuntimeException("No se pudo crear el usuario automáticamente: " + e.getMessage());
         }
     }
@@ -203,11 +211,11 @@ public class InstructorServiceImpl {
                     // Guardar cambios en el usuario
                     usuarioRepository.save(usuario);
 
-                    System.out.println("✅ Estatus de usuario actualizado: " + usuario.getUsername() + " -> " + estatusUsuario);
+                    log.info("✅ Estatus de usuario actualizado: " + usuario.getUsername() + " -> " + estatusUsuario);
                 }
             }
         } catch (Exception e) {
-            System.err.println("❌ Error al sincronizar estatus de usuario: " + e.getMessage());
+            log.error("❌ Error al sincronizar estatus de usuario: " + e.getMessage());
             throw new RuntimeException("Error al sincronizar estatus de usuario");
         }
     }
@@ -216,12 +224,12 @@ public class InstructorServiceImpl {
 
     private String generarFolioInstructor() {
         try {
-            System.out.println("🔍 Buscando último folio de instructor...");
+            log.info("🔍 Buscando último folio de instructor...");
 
             List<Instructor> todosInstructores = instructorRepository.findAll();
 
             if (todosInstructores.isEmpty()) {
-                System.out.println("✅ No hay instructores, empezando con INS001");
+                log.info("✅ No hay instructores, empezando con INS001");
                 return "INS001";
             }
 
@@ -239,31 +247,31 @@ public class InstructorServiceImpl {
                             ultimoFolio = folio;
                         }
                     } catch (NumberFormatException e) {
-                        System.err.println("⚠ Folio con formato inválido: " + folio);
+                        log.error("⚠ Folio con formato inválido: " + folio);
                     }
                 }
             }
 
             if (ultimoFolio == null) {
-                System.out.println("✅ No se encontraron folios válidos, empezando con INS001");
+                log.info("✅ No se encontraron folios válidos, empezando con INS001");
                 return "INS001";
             }
 
             int nuevoNumero = maxNumero + 1;
             String nuevoFolio = String.format("INS%03d", nuevoNumero);
 
-            System.out.println("📊 Último folio encontrado: " + ultimoFolio);
-            System.out.println("🎯 Nuevo folio generado: " + nuevoFolio);
+            log.info("📊 Último folio encontrado: " + ultimoFolio);
+            log.info("🎯 Nuevo folio generado: " + nuevoFolio);
 
             return nuevoFolio;
 
         } catch (Exception e) {
-            System.err.println("❌ Error crítico al generar folio: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Error crítico al generar folio: " + e.getMessage());
+            log.error("Error: ", e);
 
             long totalInstructores = instructorRepository.count();
             String folioFallback = String.format("INS%03d", totalInstructores + 1);
-            System.out.println("🔄 Usando fallback: " + folioFallback);
+            log.info("🔄 Usando fallback: " + folioFallback);
             return folioFallback;
         }
     }
@@ -272,7 +280,7 @@ public class InstructorServiceImpl {
 
     @Transactional
     public Instructor crearInstructorConCredenciales(Instructor instructor, String email) {
-        System.out.println("🚀 Iniciando creación de instructor con credenciales...");
+        log.info("🚀 Iniciando creación de instructor con credenciales...");
 
         // ✅ VALIDAR QUE EL EMAIL ES OBLIGATORIO
         if (email == null || email.trim().isEmpty()) {
@@ -286,7 +294,7 @@ public class InstructorServiceImpl {
         String folioGenerado = generarFolioInstructor();
         instructor.setFolioInstructor(folioGenerado);
 
-        System.out.println("📝 Folio asignado: " + folioGenerado);
+        log.info("📝 Folio asignado: " + folioGenerado);
 
         // Validaciones básicas
         if (instructor.getFechaContratacion() == null) {
@@ -311,14 +319,14 @@ public class InstructorServiceImpl {
         }
 
         Instructor instructorGuardado = instructorRepository.save(instructor);
-        System.out.println("✅ Instructor creado exitosamente: " + folioGenerado);
+        log.info("✅ Instructor creado exitosamente: " + folioGenerado);
 
         // ✅ Crear usuario automáticamente para el instructor
         try {
             crearUsuarioParaInstructor(instructorGuardado);
-            System.out.println("✅ Usuario creado automáticamente para el instructor: " + folioGenerado);
+            log.info("✅ Usuario creado automáticamente para el instructor: " + folioGenerado);
         } catch (Exception e) {
-            System.err.println("⚠ Advertencia: No se pudo crear el usuario para el instructor: " + e.getMessage());
+            log.error("⚠ Advertencia: No se pudo crear el usuario para el instructor: " + e.getMessage());
             // No lanzamos excepción para no revertir la creación del instructor
         }
 
@@ -328,7 +336,7 @@ public class InstructorServiceImpl {
     // ==================== MÉTODOS ORIGINALES ====================
 
     public Instructor crearInstructor(Instructor instructor) {
-        System.out.println("🚀 Iniciando creación de instructor...");
+        log.info("🚀 Iniciando creación de instructor...");
 
         // ✅ VALIDAR QUE EL EMAIL ES OBLIGATORIO
         if (instructor.getEmail() == null || instructor.getEmail().trim().isEmpty()) {
@@ -338,7 +346,7 @@ public class InstructorServiceImpl {
         String folioGenerado = generarFolioInstructor();
         instructor.setFolioInstructor(folioGenerado);
 
-        System.out.println("📝 Folio asignado: " + folioGenerado);
+        log.info("📝 Folio asignado: " + folioGenerado);
 
         if (instructor.getFechaContratacion() == null) {
             instructor.setFechaContratacion(LocalDate.now());
@@ -362,14 +370,14 @@ public class InstructorServiceImpl {
         }
 
         Instructor instructorGuardado = instructorRepository.save(instructor);
-        System.out.println("✅ Instructor guardado exitosamente: " + instructorGuardado.getFolioInstructor());
+        log.info("✅ Instructor guardado exitosamente: " + instructorGuardado.getFolioInstructor());
 
         // ✅ Crear usuario automáticamente
         try {
             crearUsuarioParaInstructor(instructorGuardado);
-            System.out.println("✅ Usuario creado automáticamente para el instructor: " + folioGenerado);
+            log.info("✅ Usuario creado automáticamente para el instructor: " + folioGenerado);
         } catch (Exception e) {
-            System.err.println("⚠ Advertencia: No se pudo crear el usuario para el instructor: " + e.getMessage());
+            log.error("⚠ Advertencia: No se pudo crear el usuario para el instructor: " + e.getMessage());
         }
 
         return instructorGuardado;
@@ -400,7 +408,7 @@ public class InstructorServiceImpl {
 
     @Transactional
     public Instructor actualizarInstructor(String folioInstructor, Instructor instructorActualizado) {
-        System.out.println("✏ Actualizando instructor: " + folioInstructor);
+        log.info("✏ Actualizando instructor: " + folioInstructor);
 
         Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
 
@@ -447,14 +455,14 @@ public class InstructorServiceImpl {
         }
 
         Instructor instructorActualizadoDb = instructorRepository.save(instructorExistente);
-        System.out.println("✅ Instructor actualizado: " + instructorActualizadoDb.getFolioInstructor());
+        log.info("✅ Instructor actualizado: " + instructorActualizadoDb.getFolioInstructor());
 
         // ✅ Sincronizar estatus con el usuario si cambió
         if (instructorActualizado.getEstatus() != null) {
             try {
                 sincronizarEstatusUsuario(folioInstructor, instructorActualizado.getEstatus());
             } catch (Exception e) {
-                System.err.println("⚠ Advertencia: No se pudo sincronizar el estatus del usuario: " + e.getMessage());
+                log.error("⚠ Advertencia: No se pudo sincronizar el estatus del usuario: " + e.getMessage());
             }
         }
 
@@ -471,7 +479,7 @@ public class InstructorServiceImpl {
         try {
             sincronizarEstatusUsuario(folioInstructor, nuevoEstatus);
         } catch (Exception e) {
-            System.err.println("Advertencia: " + e.getMessage());
+            log.error("Advertencia: " + e.getMessage());
         }
         return instructorActualizado;
     }
@@ -493,9 +501,9 @@ public class InstructorServiceImpl {
         // Luego desactivar el usuario asociado
         try {
             sincronizarEstatusUsuario(folioInstructor, EstatusPersona.Inactivo);
-            System.out.println("✅ Instructor y usuario desactivados: " + folioInstructor);
+            log.info("✅ Instructor y usuario desactivados: " + folioInstructor);
         } catch (Exception e) {
-            System.err.println("⚠ Instructor desactivado pero no se pudo desactivar el usuario: " + e.getMessage());
+            log.error("⚠ Instructor desactivado pero no se pudo desactivar el usuario: " + e.getMessage());
         }
     }
 
@@ -589,14 +597,14 @@ public class InstructorServiceImpl {
 
         // Eliminar de la base de datos
         instructorRepository.delete(instructor);
-        System.out.println("✅ Instructor eliminado completamente: " + folioInstructor);
+        log.info("✅ Instructor eliminado completamente: " + folioInstructor);
     }
 
     // ==================== MÉTODO PARA CREAR CON EMAIL (compatibilidad con frontend) ====================
 
     @Transactional
     public Instructor crearInstructorConEmail(Instructor instructor, String email, String username) {
-        System.out.println("🚀 Iniciando creación de instructor con email y credenciales...");
+        log.info("🚀 Iniciando creación de instructor con email y credenciales...");
 
         // ✅ VALIDAR QUE EL EMAIL ES OBLIGATORIO
         if (email == null || email.trim().isEmpty()) {
@@ -610,7 +618,7 @@ public class InstructorServiceImpl {
         if (instructor.getFolioInstructor() == null || instructor.getFolioInstructor().trim().isEmpty()) {
             String folioGenerado = generarFolioInstructor();
             instructor.setFolioInstructor(folioGenerado);
-            System.out.println("📝 Folio asignado: " + folioGenerado);
+            log.info("📝 Folio asignado: " + folioGenerado);
         }
 
         // Validaciones básicas
@@ -637,14 +645,14 @@ public class InstructorServiceImpl {
 
         // Guardar instructor primero
         Instructor instructorGuardado = instructorRepository.save(instructor);
-        System.out.println("✅ Instructor guardado exitosamente: " + instructorGuardado.getFolioInstructor());
+        log.info("✅ Instructor guardado exitosamente: " + instructorGuardado.getFolioInstructor());
 
         // ✅ CREAR USUARIO AUTOMÁTICAMENTE (ESTO ES LO QUE FALTA)
         try {
             crearUsuarioParaInstructor(instructorGuardado);
-            System.out.println("✅ Usuario creado automáticamente para el instructor: " + instructorGuardado.getFolioInstructor());
+            log.info("✅ Usuario creado automáticamente para el instructor: " + instructorGuardado.getFolioInstructor());
         } catch (Exception e) {
-            System.err.println("❌ Error al crear usuario para instructor: " + e.getMessage());
+            log.error("❌ Error al crear usuario para instructor: " + e.getMessage());
             // Puedes decidir si revertir la creación del instructor o solo loggear el error
             throw new RuntimeException("No se pudo crear el usuario automáticamente: " + e.getMessage());
         }
@@ -659,7 +667,7 @@ public class InstructorServiceImpl {
                                       String horaEntrada, String horaSalida,
                                       String especialidad, String fechaContratacion,
                                       String estatus) {
-        System.out.println("🚀 Iniciando creación de instructor...");
+        log.info("🚀 Iniciando creación de instructor...");
 
         // Generar folio
         String folioGenerado = generarFolioInstructor();
@@ -713,7 +721,7 @@ public class InstructorServiceImpl {
     public Instructor actualizarInstructor(String folioInstructor, String nombre, String app, String apm, String email,
                                            String horaEntrada, String horaSalida, String especialidad,
                                            String fechaContratacion, String estatus) {
-        System.out.println("✏️ Actualizando instructor: " + folioInstructor);
+        log.info("✏️ Actualizando instructor: " + folioInstructor);
 
         Instructor instructorExistente = obtenerInstructorPorId(folioInstructor);
 
@@ -756,7 +764,7 @@ public class InstructorServiceImpl {
         }
 
         Instructor instructorActualizado = instructorRepository.save(instructorExistente);
-        System.out.println("✅ Instructor actualizado: " + folioInstructor);
+        log.info("✅ Instructor actualizado: " + folioInstructor);
 
         return instructorActualizado;
     }

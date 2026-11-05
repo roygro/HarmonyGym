@@ -1,5 +1,8 @@
 package com.example.harmonyGymBack.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.example.harmonyGymBack.model.Administrador;
 import com.example.harmonyGymBack.repository.AdministradorRepository;
 import jakarta.persistence.EntityManager;
@@ -16,6 +19,8 @@ import java.util.Optional;
 
 @Service
 public class AdministradorServiceImpl {
+    private static final Logger log = LoggerFactory.getLogger(AdministradorServiceImpl.class);
+
 
     @Autowired
     private com.example.harmonyGymBack.repository.UsuarioRepository usuarioRepository;
@@ -35,8 +40,12 @@ public class AdministradorServiceImpl {
     }
 
 
-    @Autowired
-    private AdministradorRepository administradorRepository;
+    private final AdministradorRepository administradorRepository;
+
+    public AdministradorServiceImpl(AdministradorRepository administradorRepository) {
+        this.administradorRepository = administradorRepository;
+    }
+
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -45,12 +54,12 @@ public class AdministradorServiceImpl {
 
     private String generarFolioAdmin() {
         try {
-            System.out.println("🔍 Buscando último folio de administrador...");
+            log.info("🔍 Buscando último folio de administrador...");
 
             List<Administrador> todosAdministradores = administradorRepository.findAll();
 
             if (todosAdministradores.isEmpty()) {
-                System.out.println("✅ No hay administradores, empezando con ADM001");
+                log.info("✅ No hay administradores, empezando con ADM001");
                 return "ADM001";
             }
 
@@ -68,31 +77,31 @@ public class AdministradorServiceImpl {
                             ultimoFolio = folio;
                         }
                     } catch (NumberFormatException e) {
-                        System.err.println("⚠ Folio con formato inválido: " + folio);
+                        log.error("⚠ Folio con formato inválido: " + folio);
                     }
                 }
             }
 
             if (ultimoFolio == null) {
-                System.out.println("✅ No se encontraron folios válidos, empezando con ADM001");
+                log.info("✅ No se encontraron folios válidos, empezando con ADM001");
                 return "ADM001";
             }
 
             int nuevoNumero = maxNumero + 1;
             String nuevoFolio = String.format("ADM%03d", nuevoNumero);
 
-            System.out.println("📊 Último folio encontrado: " + ultimoFolio);
-            System.out.println("🎯 Nuevo folio generado: " + nuevoFolio);
+            log.info("📊 Último folio encontrado: " + ultimoFolio);
+            log.info("🎯 Nuevo folio generado: " + nuevoFolio);
 
             return nuevoFolio;
 
         } catch (Exception e) {
-            System.err.println("❌ Error crítico al generar folio: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Error crítico al generar folio: " + e.getMessage());
+            log.error("Error: ", e);
 
             long totalAdministradores = administradorRepository.count();
             String folioFallback = String.format("ADM%03d", totalAdministradores + 1);
-            System.out.println("🔄 Usando fallback: " + folioFallback);
+            log.info("🔄 Usando fallback: " + folioFallback);
             return folioFallback;
         }
     }
@@ -101,7 +110,7 @@ public class AdministradorServiceImpl {
 
     @Transactional
     public Administrador crearAdministrador(String nombreCom, String app, String apm) {
-        System.out.println("🚀 Iniciando creación de administrador...");
+        log.info("🚀 Iniciando creación de administrador...");
 
         String folioGenerado = generarFolioAdmin();
 
@@ -118,7 +127,7 @@ public class AdministradorServiceImpl {
         }
 
         Administrador administradorGuardado = administradorRepository.save(administrador);
-        System.out.println("✅ Administrador creado exitosamente: " + folioGenerado);
+        log.info("✅ Administrador creado exitosamente: " + folioGenerado);
 
         return administradorGuardado;
     }
@@ -127,7 +136,7 @@ public class AdministradorServiceImpl {
 
     @Transactional
     public Administrador actualizarAdministrador(String folioAdmin, String nombreCom, String app, String apm) {
-        System.out.println("✏ Actualizando administrador: " + folioAdmin);
+        log.info("✏ Actualizando administrador: " + folioAdmin);
 
         Administrador administradorExistente = obtenerAdministradorPorId(folioAdmin);
 
@@ -142,7 +151,7 @@ public class AdministradorServiceImpl {
         }
 
         Administrador administradorActualizado = administradorRepository.save(administradorExistente);
-        System.out.println("✅ Administrador actualizado: " + folioAdmin);
+        log.info("✅ Administrador actualizado: " + folioAdmin);
 
         return administradorActualizado;
     }
@@ -150,12 +159,12 @@ public class AdministradorServiceImpl {
     // ==================== MÉTODOS ORIGINALES ====================
 
     public Administrador crearAdministrador(Administrador administrador) {
-        System.out.println("🚀 Iniciando creación de administrador...");
+        log.info("🚀 Iniciando creación de administrador...");
 
         String folioGenerado = generarFolioAdmin();
         administrador.setFolioAdmin(folioGenerado);
 
-        System.out.println("📝 Folio asignado: " + folioGenerado);
+        log.info("📝 Folio asignado: " + folioGenerado);
 
         if (administrador.getFechaRegistro() == null) {
             administrador.setFechaRegistro(LocalDateTime.now());
@@ -168,7 +177,7 @@ public class AdministradorServiceImpl {
         }
 
         Administrador administradorGuardado = administradorRepository.save(administrador);
-        System.out.println("✅ Administrador guardado exitosamente: " + administradorGuardado.getFolioAdmin());
+        log.info("✅ Administrador guardado exitosamente: " + administradorGuardado.getFolioAdmin());
 
         return administradorGuardado;
     }
@@ -201,7 +210,7 @@ public class AdministradorServiceImpl {
 
     @Transactional
     public Administrador actualizarAdministrador(String folioAdmin, Administrador administradorActualizado) {
-        System.out.println("✏ Actualizando administrador: " + folioAdmin);
+        log.info("✏ Actualizando administrador: " + folioAdmin);
 
         Administrador administradorExistente = obtenerAdministradorPorId(folioAdmin);
 
@@ -231,7 +240,7 @@ public class AdministradorServiceImpl {
         }
 
         Administrador administradorActualizadoDb = administradorRepository.save(administradorExistente);
-        System.out.println("✅ Administrador actualizado: " + administradorActualizadoDb.getFolioAdmin());
+        log.info("✅ Administrador actualizado: " + administradorActualizadoDb.getFolioAdmin());
 
         return administradorActualizadoDb;
     }
@@ -254,7 +263,7 @@ public class AdministradorServiceImpl {
                 if (usuarioRepository != null) usuarioRepository.save(u);
             });
         }
-        System.out.println("✅ Administrador eliminado: " + folioAdmin);
+        log.info("✅ Administrador eliminado: " + folioAdmin);
     }
 
     // ==================== ESTADÍSTICAS ====================
