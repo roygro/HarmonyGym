@@ -1,5 +1,7 @@
 package com.example.harmonyGymBack.rest;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.harmonyGymBack.model.enums.MetodoPago;
 import com.example.harmonyGymBack.service.VentaService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -12,6 +14,7 @@ import java.time.LocalDate;
 import java.util.Map;
 
 @RestController
+@PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
 @RequestMapping("/api/ventas")
 @CrossOrigin(origins = "*")
 public class VentaController {

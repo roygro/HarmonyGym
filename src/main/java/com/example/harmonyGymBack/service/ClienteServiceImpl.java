@@ -239,33 +239,7 @@ public class ClienteServiceImpl {
         return username;
     }
 
-    private String generarPasswordTemporal() {
-        // Generar una contraseña temporal de 8 caracteres
-        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        StringBuilder password = new StringBuilder();
-
-        // Asegurar que tenga al menos una mayúscula, una minúscula y un número
-        password.append(caracteres.charAt((int) (Math.random() * 26))); // Mayúscula
-        password.append(caracteres.charAt(26 + (int) (Math.random() * 26))); // Minúscula
-        password.append(caracteres.charAt(52 + (int) (Math.random() * 10))); // Número
-
-        // Completar los 8 caracteres
-        for (int i = 3; i < 8; i++) {
-            int index = (int) (Math.random() * caracteres.length());
-            password.append(caracteres.charAt(index));
-        }
-
-        // Mezclar los caracteres
-        char[] passwordArray = password.toString().toCharArray();
-        for (int i = passwordArray.length - 1; i > 0; i--) {
-            int j = (int) (Math.random() * (i + 1));
-            char temp = passwordArray[i];
-            passwordArray[i] = passwordArray[j];
-            passwordArray[j] = temp;
-        }
-
-        return new String(passwordArray);
-    }
+    private String generarPasswordTemporal() { return com.example.harmonyGymBack.security.PasswordHelper.generarPasswordTemporalSegura(); }
 
     private void sincronizarEstatusUsuario(String folioCliente, EstatusPersona estatusCliente) {
         try {

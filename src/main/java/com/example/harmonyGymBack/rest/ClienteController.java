@@ -4,6 +4,7 @@ import com.example.harmonyGymBack.model.Cliente;
 import com.example.harmonyGymBack.service.ClienteServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -112,6 +113,7 @@ public class ClienteController {
         }
     }
 
+    @PreAuthorize("@seguridadAcceso.puedeAccederCliente(#folioCliente, authentication)")
     @GetMapping("/{folioCliente}")
     public ResponseEntity<?> obtenerClientePorId(@PathVariable String folioCliente) {
         try {

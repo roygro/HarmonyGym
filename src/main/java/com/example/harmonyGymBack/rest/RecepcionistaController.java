@@ -1,5 +1,7 @@
 package com.example.harmonyGymBack.rest;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.harmonyGymBack.model.Recepcionista;
 import com.example.harmonyGymBack.service.RecepcionistaServiceImpl;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@PreAuthorize("hasRole('ADMINISTRADOR')")
 @RequestMapping("/api/recepcionistas")
 @CrossOrigin(origins = "*")
 public class RecepcionistaController {

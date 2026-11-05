@@ -1,5 +1,7 @@
 package com.example.harmonyGymBack.rest;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.harmonyGymBack.model.Pago;
 import com.example.harmonyGymBack.service.PagoService;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
 @RequestMapping("/api/pagos")
 @CrossOrigin(origins = "*")
 public class PagoController {

@@ -5,6 +5,7 @@ public class RegisterRequest {
     private String password;
     private String tipoUsuario;
     private String idPersona;
+    private Boolean debeCambiarPassword = false;
 
     // Constructores
     public RegisterRequest() {}
@@ -14,6 +15,11 @@ public class RegisterRequest {
         this.password = password;
         this.tipoUsuario = tipoUsuario;
         this.idPersona = idPersona;
+    }
+
+    public RegisterRequest(String username, String password, String tipoUsuario, String idPersona, Boolean debeCambiarPassword) {
+        this(username, password, tipoUsuario, idPersona);
+        this.debeCambiarPassword = debeCambiarPassword;
     }
 
     // Getters y Setters
@@ -28,4 +34,7 @@ public class RegisterRequest {
 
     public String getIdPersona() { return idPersona; }
     public void setIdPersona(String idPersona) { this.idPersona = idPersona; }
+
+    public Boolean getDebeCambiarPassword() { return debeCambiarPassword != null && debeCambiarPassword; }
+    public void setDebeCambiarPassword(Boolean debeCambiarPassword) { this.debeCambiarPassword = debeCambiarPassword; }
 }

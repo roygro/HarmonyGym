@@ -15,6 +15,7 @@ public class AuthResponse {
     private String permisos;
     private String nombreCompleto;
     private LocalDateTime ultimoLogin;
+    private Boolean debeCambiarPassword = false;
 
     // Constructores
     public AuthResponse() {}
@@ -72,4 +73,7 @@ public class AuthResponse {
 
     public LocalDateTime getUltimoLogin() { return ultimoLogin; }
     public void setUltimoLogin(LocalDateTime ultimoLogin) { this.ultimoLogin = ultimoLogin; }
+
+    public Boolean getDebeCambiarPassword() { return debeCambiarPassword != null && debeCambiarPassword; }
+    public void setDebeCambiarPassword(Boolean debeCambiarPassword) { this.debeCambiarPassword = debeCambiarPassword; }
 }
