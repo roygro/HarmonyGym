@@ -70,6 +70,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         // Rutas públicas
+                        .requestMatchers(HttpMethod.GET, "/api/auth/status").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/recuperar-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/restablecer-password").permitAll()
