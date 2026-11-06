@@ -1,8 +1,10 @@
 package com.example.harmonyGymBack.repository;
 
 import com.example.harmonyGymBack.model.MembresiaCliente;
+import com.example.harmonyGymBack.model.enums.EstatusMembresiaCliente;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,50 +20,48 @@ public interface MembresiaClienteRepository extends JpaRepository<MembresiaClien
     List<MembresiaCliente> findByClienteFolioCliente(String folioCliente);
 
     // Buscar membresía activa de un cliente
-    Optional<MembresiaCliente> findByClienteFolioClienteAndEstatus(String folioCliente, String estatus);
+    Optional<MembresiaCliente> findByClienteFolioClienteAndEstatus(String folioCliente, EstatusMembresiaCliente estatus);
 
     // Buscar todas las membresías por estatus
-    List<MembresiaCliente> findByEstatus(String estatus);
+    List<MembresiaCliente> findByEstatus(EstatusMembresiaCliente estatus);
 
-    // Contar membresías por estatus (MÉTODO NUEVO AGREGADO)
-    long countByEstatus(String estatus);
+    // Contar membresías por estatus
+    long countByEstatus(EstatusMembresiaCliente estatus);
 
     // Buscar membresías que expiran en una fecha específica
     List<MembresiaCliente> findByFechaFin(LocalDate fechaFin);
 
     // Buscar membresías que expiran pronto (en los próximos X días)
-    @Query("SELECT mc FROM MembresiaCliente mc WHERE mc.fechaFin BETWEEN :hoy AND :fechaLimite AND mc.estatus = 'Activa'")
+    @Query("SELECT mc FROM MembresiaCliente mc WHERE mc.fechaFin BETWEEN :hoy AND :fechaLimite AND mc.estatus = com.example.harmonyGymBack.model.enums.EstatusMembresiaCliente.Activa")
     List<MembresiaCliente> findMembresiasPorExpirar(@Param("hoy") LocalDate hoy, @Param("fechaLimite") LocalDate fechaLimite);
 
     // Buscar membresías expiradas
-    @Query("SELECT mc FROM MembresiaCliente mc WHERE mc.fechaFin < :hoy AND mc.estatus = 'Activa'")
+    @Query("SELECT mc FROM MembresiaCliente mc WHERE mc.fechaFin < :hoy AND mc.estatus = com.example.harmonyGymBack.model.enums.EstatusMembresiaCliente.Activa")
     List<MembresiaCliente> findMembresiasExpiradas(@Param("hoy") LocalDate hoy);
 
     // Actualizar estatus de membresías expiradas
-    @Modifying
-    @Query("UPDATE MembresiaCliente mc SET mc.estatus = 'Expirada', mc.fechaActualizacion = CURRENT_TIMESTAMP WHERE mc.fechaFin < :hoy AND mc.estatus = 'Activa'")
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query("UPDATE MembresiaCliente mc SET mc.estatus = com.example.harmonyGymBack.model.enums.EstatusMembresiaCliente.Expirada, mc.fechaActualizacion = CURRENT_TIMESTAMP WHERE mc.fechaFin < :hoy AND mc.estatus = com.example.harmonyGymBack.model.enums.EstatusMembresiaCliente.Activa")
     int actualizarMembresiasExpiradas(@Param("hoy") LocalDate hoy);
 
     // Contar membresías activas por cliente
-    Long countByClienteFolioClienteAndEstatus(String folioCliente, String estatus);
+    Long countByClienteFolioClienteAndEstatus(String folioCliente, EstatusMembresiaCliente estatus);
 
     // Verificar si un cliente tiene membresía activa
-    boolean existsByClienteFolioClienteAndEstatus(String folioCliente, String estatus);
+    boolean existsByClienteFolioClienteAndEstatus(String folioCliente, EstatusMembresiaCliente estatus);
 
     // Obtener historial de membresías ordenado por fecha de inicio
     List<MembresiaCliente> findByClienteFolioClienteOrderByFechaInicioDesc(String folioCliente);
 
     // Buscar membresías por tipo de membresía
-    @Query("SELECT mc FROM MembresiaCliente mc WHERE mc.membresia.tipo = :tipo AND mc.estatus = 'Activa'")
+    @Query("SELECT mc FROM MembresiaCliente mc WHERE mc.membresia.tipo = :tipo AND mc.estatus = com.example.harmonyGymBack.model.enums.EstatusMembresiaCliente.Activa")
     List<MembresiaCliente> findByMembresiaTipoAndActiva(@Param("tipo") com.example.harmonyGymBack.model.TipoMembresia tipo);
-
 
     // Verificar si existe otra membresía activa excluyendo una específica
     @Query("SELECT COUNT(mc) > 0 FROM MembresiaCliente mc WHERE mc.cliente.folioCliente = :folioCliente AND mc.estatus = :estatus AND mc.idMembresiaCliente != :excludeId")
     boolean existsByClienteFolioClienteAndEstatusAndIdMembresiaClienteNot(
             @Param("folioCliente") String folioCliente,
-            @Param("estatus") String estatus,
+            @Param("estatus") EstatusMembresiaCliente estatus,
             @Param("excludeId") Long excludeId);
-
-
 }

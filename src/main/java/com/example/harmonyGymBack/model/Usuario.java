@@ -1,5 +1,6 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusUsuario;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -23,7 +24,7 @@ public class Usuario {
     private String idPersona;
 
     @Column(name = "estatus")
-    private String estatus = "Activo";
+    private EstatusUsuario estatus = EstatusUsuario.Activo;
 
     @Column(name = "ultimo_login")
     private LocalDateTime ultimoLogin;
@@ -37,9 +38,13 @@ public class Usuario {
     @Column(name = "fecha_bloqueo")
     private LocalDateTime fechaBloqueo;
 
+    @Column(name = "debe_cambiar_password")
+    private Boolean debeCambiarPassword = false;
+
     // Constructores
     public Usuario() {
         this.fechaCreacion = LocalDateTime.now();
+        this.estatus = EstatusUsuario.Activo;
     }
 
     public Usuario(String idUsuario, String username, String passwordHash,
@@ -50,6 +55,13 @@ public class Usuario {
         this.tipoUsuario = tipoUsuario;
         this.idPersona = idPersona;
         this.fechaCreacion = LocalDateTime.now();
+        this.estatus = EstatusUsuario.Activo;
+    }
+
+    public Usuario(String idUsuario, String username, String passwordHash,
+                   String tipoUsuario, String idPersona, EstatusUsuario estatus) {
+        this(idUsuario, username, passwordHash, tipoUsuario, idPersona);
+        this.estatus = estatus != null ? estatus : EstatusUsuario.Activo;
     }
 
     // Getters y Setters
@@ -68,8 +80,9 @@ public class Usuario {
     public String getIdPersona() { return idPersona; }
     public void setIdPersona(String idPersona) { this.idPersona = idPersona; }
 
-    public String getEstatus() { return estatus; }
-    public void setEstatus(String estatus) { this.estatus = estatus; }
+    public EstatusUsuario getEstatus() { return estatus; }
+    public void setEstatus(EstatusUsuario estatus) { this.estatus = estatus; }
+    public void setEstatus(String estatus) { this.estatus = EstatusUsuario.fromString(estatus); }
 
     public LocalDateTime getUltimoLogin() { return ultimoLogin; }
     public void setUltimoLogin(LocalDateTime ultimoLogin) { this.ultimoLogin = ultimoLogin; }
@@ -82,4 +95,11 @@ public class Usuario {
 
     public LocalDateTime getFechaBloqueo() { return fechaBloqueo; }
     public void setFechaBloqueo(LocalDateTime fechaBloqueo) { this.fechaBloqueo = fechaBloqueo; }
+
+    public Boolean getDebeCambiarPassword() { return debeCambiarPassword != null && debeCambiarPassword; }
+    public void setDebeCambiarPassword(Boolean debeCambiarPassword) { this.debeCambiarPassword = debeCambiarPassword; }
+
+    public boolean isActivo() {
+        return EstatusUsuario.Activo.equals(this.estatus);
+    }
 }

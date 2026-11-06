@@ -1,10 +1,16 @@
 package com.example.harmonyGymBack.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.example.harmonyGymBack.model.*;
+import com.example.harmonyGymBack.model.enums.EstatusUsuario;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import com.example.harmonyGymBack.repository.*;
+import com.example.harmonyGymBack.security.JwtTokenProvider;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,15 +22,25 @@ import java.util.Optional;
 
 @Service
 public class AuthService {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final UsuarioRolRepository usuarioRolRepository;
+    private final RolRepository rolRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
-    private UsuarioRolRepository usuarioRolRepository;
-
-    @Autowired
-    private RolRepository rolRepository;
+    public AuthService(UsuarioRepository usuarioRepository,
+                       UsuarioRolRepository usuarioRolRepository,
+                       RolRepository rolRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtTokenProvider jwtTokenProvider) {
+        this.usuarioRepository = usuarioRepository;
+        this.usuarioRolRepository = usuarioRolRepository;
+        this.rolRepository = rolRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenProvider = jwtTokenProvider;
+    }
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -34,62 +50,90 @@ public class AuthService {
     @Transactional
     public AuthResponse autenticarUsuario(String username, String password) {
         try {
-            System.out.println("🔐 Intentando autenticar usuario: " + username);
+            log.info("🔐 Intentando autenticar usuario: {}", username);
 
             Optional<Usuario> usuarioOpt = usuarioRepository.findByUsername(username);
 
             if (usuarioOpt.isEmpty()) {
-                System.out.println("❌ Usuario no encontrado: " + username);
-                return new AuthResponse(false, "Usuario no encontrado");
+                log.info("❌ Usuario no encontrado: {}", username);
+                return new AuthResponse(false, "Credenciales incorrectas");
             }
 
             Usuario usuario = usuarioOpt.get();
 
             // Verificar estatus del usuario
-            if ("Bloqueado".equals(usuario.getEstatus())) {
-                System.out.println("❌ Usuario bloqueado: " + username);
+            if (EstatusUsuario.Bloqueado.equals(usuario.getEstatus()) || "Bloqueado".equalsIgnoreCase(String.valueOf(usuario.getEstatus()))) {
+                log.info("❌ Usuario bloqueado: {}", username);
                 return new AuthResponse(false, "Usuario bloqueado. Contacte al administrador.");
             }
 
-            if ("Inactivo".equals(usuario.getEstatus())) {
-                System.out.println("❌ Usuario inactivo: " + username);
+            if (EstatusUsuario.Inactivo.equals(usuario.getEstatus())) {
+                log.info("❌ Usuario inactivo: {}", username);
                 return new AuthResponse(false, "Usuario inactivo");
             }
 
-            // Verificar contraseña (en un sistema real usarías bcrypt)
-            if (!usuario.getPasswordHash().equals(password)) {
-                // Incrementar intentos fallidos usando el método del repositorio
-                usuarioRepository.incrementarIntentosLogin(username);
+            // Verificación y migración transparente de contraseña BCrypt
+            String storedPassword = usuario.getPasswordHash();
+            boolean passwordCorrecta = false;
 
-                // Obtener el usuario actualizado para verificar los intentos
-                usuario = usuarioRepository.findByUsername(username)
-                        .orElseThrow(() -> new RuntimeException("Usuario no encontrado después de incrementar intentos"));
+            if (storedPassword != null && (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$") || storedPassword.startsWith("$2y$"))) {
+                // Ya está hasheada con BCrypt
+                passwordCorrecta = passwordEncoder.matches(password, storedPassword);
+            } else {
+                // Contraseña legacy en texto plano: comparar directamente y migrar si coincide
+                if (storedPassword != null && storedPassword.equals(password)) {
+                    passwordCorrecta = true;
+                    String hashBcrypt = passwordEncoder.encode(password);
+                    usuario.setPasswordHash(hashBcrypt);
+                    usuarioRepository.save(usuario);
+                    log.info("🔐 Contraseña legacy de {} migrada exitosamente a BCrypt", username);
+                }
+            }
 
-                // Bloquear usuario después de 5 intentos fallidos
-                if (usuario.getIntentosLogin() >= 5) {
-                    usuarioRepository.bloquearUsuario(username, LocalDateTime.now());
-                    System.out.println("❌ Usuario bloqueado por demasiados intentos fallidos: " + username);
+            if (!passwordCorrecta) {
+                // Incrementar intentos fallidos
+                int intentos = (usuario.getIntentosLogin() != null ? usuario.getIntentosLogin() : 0) + 1;
+                usuario.setIntentosLogin(intentos);
+
+                if (intentos >= 5) {
+                    usuario.setEstatus(EstatusUsuario.Bloqueado);
+                    usuario.setFechaBloqueo(LocalDateTime.now());
+                    usuarioRepository.save(usuario);
+                    log.warn("❌ Usuario {} bloqueado por alcanzar 5 intentos fallidos", username);
                     return new AuthResponse(false, "Demasiados intentos fallidos. Usuario bloqueado.");
                 }
 
-                System.out.println("❌ Contraseña incorrecta para usuario: " + username);
+                usuarioRepository.save(usuario);
+                log.info("❌ Contraseña incorrecta para usuario: {} (intento {}/5)", username, intentos);
                 return new AuthResponse(false, "Credenciales incorrectas");
             }
 
-            // Login exitoso - Actualizar último login usando el método del repositorio
-            usuarioRepository.actualizarUltimoLogin(username, LocalDateTime.now());
+            // Login exitoso: resetear intentos y actualizar último login
+            usuario.setIntentosLogin(0);
+            usuario.setUltimoLogin(LocalDateTime.now());
+            usuarioRepository.save(usuario);
 
             // Obtener información del rol y datos de la persona
             AuthResponse response = obtenerInformacionUsuarioCompleta(usuario);
             response.setSuccess(true);
             response.setMessage("Login exitoso");
+            response.setDebeCambiarPassword(usuario.getDebeCambiarPassword());
 
-            System.out.println("✅ Login exitoso para usuario: " + username);
+            // Generar token JWT
+            String token = jwtTokenProvider.generarToken(
+                    usuario.getUsername(),
+                    usuario.getIdUsuario(),
+                    usuario.getTipoUsuario(),
+                    response.getNombreRol(),
+                    usuario.getIdPersona()
+            );
+            response.setToken(token);
+
+            log.info("✅ Login exitoso y token JWT emitido para usuario: {}", username);
             return response;
 
         } catch (Exception e) {
-            System.err.println("❌ Error durante autenticación: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Error durante autenticación: {}", e.getMessage(), e);
             return new AuthResponse(false, "Error interno del servidor");
         }
     }
@@ -103,6 +147,7 @@ public class AuthService {
         response.setTipoUsuario(usuario.getTipoUsuario());
         response.setIdPersona(usuario.getIdPersona());
         response.setUltimoLogin(usuario.getUltimoLogin());
+        response.setDebeCambiarPassword(usuario.getDebeCambiarPassword());
 
         try {
             // Obtener rol del usuario
@@ -118,6 +163,8 @@ public class AuthService {
                     response.setNombreRol(rol.getNombreRol());
                     response.setPermisos(rol.getPermisos());
                 }
+            } else {
+                response.setNombreRol(usuario.getTipoUsuario());
             }
 
             // Obtener nombre completo según el tipo de usuario
@@ -125,7 +172,7 @@ public class AuthService {
             response.setNombreCompleto(nombreCompleto);
 
         } catch (Exception e) {
-            System.err.println("❌ Error al obtener información adicional del usuario: " + e.getMessage());
+            log.error("❌ Error al obtener información adicional del usuario: {}", e.getMessage());
         }
 
         return response;
@@ -163,7 +210,7 @@ public class AuthService {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Error al obtener nombre completo: " + e.getMessage());
+            log.error("❌ Error al obtener nombre completo: {}", e.getMessage());
         }
 
         return "Usuario";
@@ -174,56 +221,50 @@ public class AuthService {
     @Transactional
     public AuthResponse registrarUsuario(RegisterRequest registerRequest) {
         try {
-            System.out.println("🚀 Iniciando registro de usuario: " + registerRequest.getUsername());
+            log.info("🚀 Iniciando registro de usuario: {}", registerRequest.getUsername());
 
-            // Verificar si el username ya existe
             if (usuarioRepository.existsByUsername(registerRequest.getUsername())) {
-                System.out.println("❌ Username ya existe: " + registerRequest.getUsername());
+                log.info("❌ Username ya existe: {}", registerRequest.getUsername());
                 return new AuthResponse(false, "El nombre de usuario ya está en uso");
             }
 
-            // Verificar si ya existe un usuario para esta persona y tipo
             if (usuarioRepository.existsByIdPersonaAndTipoUsuario(
                     registerRequest.getIdPersona(), registerRequest.getTipoUsuario())) {
-                System.out.println("❌ Ya existe un usuario para esta persona y tipo: " + registerRequest.getIdPersona());
+                log.info("❌ Ya existe un usuario para esta persona y tipo: {}", registerRequest.getIdPersona());
                 return new AuthResponse(false, "Ya existe un usuario para esta persona con el tipo especificado");
             }
 
-            // Generar ID de usuario
             String idUsuario = generarIdUsuario();
 
-            // Crear usuario
+            // Hashear contraseña con BCrypt
+            String rawPassword = registerRequest.getPassword();
+            String passwordHash = passwordEncoder.encode(rawPassword);
+
             Usuario usuario = new Usuario();
             usuario.setIdUsuario(idUsuario);
             usuario.setUsername(registerRequest.getUsername());
-            usuario.setPasswordHash(registerRequest.getPassword()); // En producción usar bcrypt
+            usuario.setPasswordHash(passwordHash);
             usuario.setTipoUsuario(registerRequest.getTipoUsuario());
             usuario.setIdPersona(registerRequest.getIdPersona());
-            usuario.setEstatus("Activo");
+            usuario.setEstatus(EstatusUsuario.Activo);
             usuario.setIntentosLogin(0);
             usuario.setFechaCreacion(LocalDateTime.now());
+            // Si viene especificado debeCambiarPassword, usarlo; de lo contrario por defecto true si fue creado por admin/recep
+            usuario.setDebeCambiarPassword(registerRequest.getDebeCambiarPassword() != null ? registerRequest.getDebeCambiarPassword() : true);
 
             Usuario usuarioGuardado = usuarioRepository.save(usuario);
-            System.out.println("✅ Usuario guardado: " + idUsuario);
+            log.info("✅ Usuario guardado con BCrypt: {}", idUsuario);
 
-            // Asignar rol por defecto según el tipo de usuario
-            boolean rolAsignado = asignarRolPorDefecto(usuarioGuardado);
+            asignarRolPorDefecto(usuarioGuardado);
 
-            if (!rolAsignado) {
-                System.out.println("⚠ No se pudo asignar rol por defecto para: " + registerRequest.getTipoUsuario());
-            }
-
-            // Obtener información completa para la respuesta
             AuthResponse response = obtenerInformacionUsuarioCompleta(usuarioGuardado);
             response.setSuccess(true);
             response.setMessage("Usuario registrado exitosamente");
 
-            System.out.println("✅ Registro completado para: " + registerRequest.getUsername());
             return response;
 
         } catch (Exception e) {
-            System.err.println("❌ Error durante el registro: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Error durante el registro: {}", e.getMessage(), e);
             return new AuthResponse(false, "Error durante el registro: " + e.getMessage());
         }
     }
@@ -232,8 +273,13 @@ public class AuthService {
 
     private boolean asignarRolPorDefecto(Usuario usuario) {
         try {
-            // Buscar rol por defecto para el tipo de usuario
-            Optional<Rol> rolOpt = rolRepository.findRolPorDefecto(usuario.getTipoUsuario());
+            Optional<Rol> rolOpt = rolRepository.findByNombreRolIgnoreCase(usuario.getTipoUsuario());
+            if (rolOpt.isEmpty()) {
+                rolOpt = rolRepository.findByNombreRol(usuario.getTipoUsuario());
+            }
+            if (rolOpt.isEmpty()) {
+                rolOpt = rolRepository.findRolPorDefecto(usuario.getTipoUsuario());
+            }
 
             if (rolOpt.isPresent()) {
                 Rol rol = rolOpt.get();
@@ -242,18 +288,18 @@ public class AuthService {
                 usuarioRol.setIdUsuario(usuario.getIdUsuario());
                 usuarioRol.setTipoUsuario(usuario.getTipoUsuario());
                 usuarioRol.setIdRol(rol.getIdRol());
-                usuarioRol.setEstatus("Activo");
+                usuarioRol.setEstatus(EstatusPersona.Activo);
 
                 usuarioRolRepository.save(usuarioRol);
-                System.out.println("✅ Rol asignado: " + rol.getNombreRol() + " para usuario: " + usuario.getUsername());
+                log.info("✅ Rol asignado: {} para usuario: {}", rol.getNombreRol(), usuario.getUsername());
                 return true;
             }
 
-            System.err.println("❌ No se encontró rol por defecto para tipo: " + usuario.getTipoUsuario());
+            log.error("❌ No se encontró rol por defecto para tipo: {}", usuario.getTipoUsuario());
             return false;
 
         } catch (Exception e) {
-            System.err.println("❌ Error al asignar rol por defecto: " + e.getMessage());
+            log.error("❌ Error al asignar rol por defecto: {}", e.getMessage());
             return false;
         }
     }
@@ -262,47 +308,28 @@ public class AuthService {
 
     private String generarIdUsuario() {
         try {
-            System.out.println("🔍 Buscando último ID de usuario...");
-
-            // Usar el método optimizado del repositorio
             String ultimoId = usuarioRepository.findUltimoIdUsuario();
 
             if (ultimoId == null) {
-                System.out.println("✅ No hay usuarios, empezando con USR001");
                 return "USR001";
             }
 
-            // Extraer el número del último ID
             if (ultimoId.startsWith("USR")) {
                 try {
                     String numeroStr = ultimoId.substring(3);
                     int numero = Integer.parseInt(numeroStr);
-                    int nuevoNumero = numero + 1;
-                    String nuevoId = String.format("USR%03d", nuevoNumero);
-
-                    System.out.println("📊 Último ID encontrado: " + ultimoId);
-                    System.out.println("🎯 Nuevo ID generado: " + nuevoId);
-
-                    return nuevoId;
+                    return String.format("USR%03d", numero + 1);
                 } catch (NumberFormatException e) {
-                    System.err.println("⚠ ID con formato inválido: " + ultimoId);
+                    log.error("⚠ ID con formato inválido: {}", ultimoId);
                 }
             }
 
-            // Fallback: contar usuarios
             long totalUsuarios = usuarioRepository.count();
-            String idFallback = String.format("USR%03d", totalUsuarios + 1);
-            System.out.println("🔄 Usando fallback: " + idFallback);
-            return idFallback;
+            return String.format("USR%03d", totalUsuarios + 1);
 
         } catch (Exception e) {
-            System.err.println("❌ Error crítico al generar ID: " + e.getMessage());
-            e.printStackTrace();
-
             long totalUsuarios = usuarioRepository.count();
-            String idFallback = String.format("USR%03d", totalUsuarios + 1);
-            System.out.println("🔄 Usando fallback por error: " + idFallback);
-            return idFallback;
+            return String.format("USR%03d", totalUsuarios + 1);
         }
     }
 
@@ -321,17 +348,22 @@ public class AuthService {
                 return response;
             }
 
-            // Usar el método del repositorio que también resetea intentos y bloqueo
-            usuarioRepository.cambiarPassword(username, nuevaPassword);
+            Usuario usuario = usuarioOpt.get();
+            // Encriptar siempre con BCrypt
+            usuario.setPasswordHash(passwordEncoder.encode(nuevaPassword));
+            usuario.setDebeCambiarPassword(false);
+            usuario.setIntentosLogin(0);
+            usuario.setFechaBloqueo(null);
+            usuarioRepository.save(usuario);
 
             response.put("success", true);
             response.put("message", "Contraseña actualizada exitosamente");
-            System.out.println("✅ Contraseña cambiada para usuario: " + username);
+            log.info("✅ Contraseña cambiada y encriptada con BCrypt para usuario: {}", username);
 
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error al cambiar contraseña: " + e.getMessage());
-            System.err.println("❌ Error al cambiar contraseña: " + e.getMessage());
+            log.error("❌ Error al cambiar contraseña: {}", e.getMessage());
         }
 
         return response;
@@ -370,22 +402,20 @@ public class AuthService {
                 return response;
             }
 
-            // Para desbloquear, cambiamos la contraseña (lo cual también desbloquea)
-            // o podríamos crear un método específico en el repositorio
             Usuario usuario = usuarioOpt.get();
-            usuario.setEstatus("Activo");
+            usuario.setEstatus(EstatusUsuario.Activo);
             usuario.setFechaBloqueo(null);
             usuario.setIntentosLogin(0);
             usuarioRepository.save(usuario);
 
             response.put("success", true);
             response.put("message", "Usuario desbloqueado exitosamente");
-            System.out.println("✅ Usuario desbloqueado: " + username);
+            log.info("✅ Usuario desbloqueado: {}", username);
 
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error al desbloquear usuario: " + e.getMessage());
-            System.err.println("❌ Error al desbloquear usuario: " + e.getMessage());
+            log.error("❌ Error al desbloquear usuario: {}", e.getMessage());
         }
 
         return response;
@@ -396,5 +426,4 @@ public class AuthService {
     public Optional<Usuario> obtenerUsuarioPorUsername(String username) {
         return usuarioRepository.findByUsername(username);
     }
-
 }

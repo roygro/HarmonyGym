@@ -1,6 +1,11 @@
 package com.example.harmonyGymBack.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.example.harmonyGymBack.model.Cliente;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
+import com.example.harmonyGymBack.model.enums.EstatusUsuario;
 import com.example.harmonyGymBack.model.Usuario;
 import com.example.harmonyGymBack.model.AuthResponse;
 import com.example.harmonyGymBack.model.RegisterRequest;
@@ -9,7 +14,6 @@ import com.example.harmonyGymBack.repository.UsuarioRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,18 +33,24 @@ import java.util.UUID;
 
 @Service
 public class ClienteServiceImpl {
+    private static final Logger log = LoggerFactory.getLogger(ClienteServiceImpl.class);
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
 
-    @Autowired
-    private AuthService authService;
+    private final UsuarioRepository usuarioRepository;
 
-    @Autowired
-    private ClienteRepository clienteRepository;
+    private final AuthService authService;
 
-    @Autowired
-    private EmailService emailService;
+    private final ClienteRepository clienteRepository;
+
+    private final EmailService emailService;
+
+    public ClienteServiceImpl(UsuarioRepository usuarioRepository, AuthService authService, ClienteRepository clienteRepository, EmailService emailService) {
+        this.usuarioRepository = usuarioRepository;
+        this.authService = authService;
+        this.clienteRepository = clienteRepository;
+        this.emailService = emailService;
+    }
+
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -117,12 +127,12 @@ public class ClienteServiceImpl {
 
     private void crearUsuarioParaCliente(Cliente cliente) {
         try {
-            System.out.println("👤 Creando usuario automático para cliente: " + cliente.getFolioCliente());
+            log.info("👤 Creando usuario automático para cliente: " + cliente.getFolioCliente());
 
             // Verificar si ya existe un usuario para este cliente
             Optional<Usuario> usuarioExistente = authService.obtenerUsuarioPorIdPersona(cliente.getFolioCliente());
             if (usuarioExistente.isPresent()) {
-                System.out.println("ℹ️ Ya existe un usuario para este cliente: " + cliente.getFolioCliente());
+                log.info("ℹ️ Ya existe un usuario para este cliente: " + cliente.getFolioCliente());
                 return;
             }
 
@@ -143,10 +153,10 @@ public class ClienteServiceImpl {
             AuthResponse authResponse = authService.registrarUsuario(registerRequest);
 
             if (authResponse.isSuccess()) {
-                System.out.println("✅ Usuario creado exitosamente:");
-                System.out.println("   📧 Username: " + username);
-                System.out.println("   🔑 Password temporal: " + passwordTemporal);
-                System.out.println("   👤 ID Usuario: " + authResponse.getIdUsuario());
+                log.info("✅ Usuario creado exitosamente:");
+                log.info("   📧 Username: " + username);
+                log.info("   🔑 Password temporal: " + passwordTemporal);
+                log.info("   👤 ID Usuario: " + authResponse.getIdUsuario());
 
                 // ✅ ENVIAR CREDENCIALES POR EMAIL
                 if (cliente.getEmail() != null && !cliente.getEmail().trim().isEmpty()) {
@@ -157,13 +167,13 @@ public class ClienteServiceImpl {
                                 username,
                                 passwordTemporal
                         );
-                        System.out.println("✅ Credenciales enviadas por email a: " + cliente.getEmail());
+                        log.info("✅ Credenciales enviadas por email a: " + cliente.getEmail());
                     } catch (Exception e) {
-                        System.err.println("⚠️ No se pudieron enviar las credenciales por email: " + e.getMessage());
+                        log.error("⚠️ No se pudieron enviar las credenciales por email: " + e.getMessage());
                         // No revertimos la creación por fallo en el email
                     }
                 } else {
-                    System.out.println("⚠️ Cliente no tiene email, no se enviaron credenciales");
+                    log.info("⚠️ Cliente no tiene email, no se enviaron credenciales");
                 }
 
             } else {
@@ -171,7 +181,7 @@ public class ClienteServiceImpl {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Error al crear usuario automático: " + e.getMessage());
+            log.error("❌ Error al crear usuario automático: " + e.getMessage());
             throw new RuntimeException("No se pudo crear el usuario automáticamente: " + e.getMessage());
         }
     }
@@ -229,46 +239,20 @@ public class ClienteServiceImpl {
         return username;
     }
 
-    private String generarPasswordTemporal() {
-        // Generar una contraseña temporal de 8 caracteres
-        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        StringBuilder password = new StringBuilder();
+    private String generarPasswordTemporal() { return com.example.harmonyGymBack.security.PasswordHelper.generarPasswordTemporalSegura(); }
 
-        // Asegurar que tenga al menos una mayúscula, una minúscula y un número
-        password.append(caracteres.charAt((int) (Math.random() * 26))); // Mayúscula
-        password.append(caracteres.charAt(26 + (int) (Math.random() * 26))); // Minúscula
-        password.append(caracteres.charAt(52 + (int) (Math.random() * 10))); // Número
-
-        // Completar los 8 caracteres
-        for (int i = 3; i < 8; i++) {
-            int index = (int) (Math.random() * caracteres.length());
-            password.append(caracteres.charAt(index));
-        }
-
-        // Mezclar los caracteres
-        char[] passwordArray = password.toString().toCharArray();
-        for (int i = passwordArray.length - 1; i > 0; i--) {
-            int j = (int) (Math.random() * (i + 1));
-            char temp = passwordArray[i];
-            passwordArray[i] = passwordArray[j];
-            passwordArray[j] = temp;
-        }
-
-        return new String(passwordArray);
-    }
-
-    private void sincronizarEstatusUsuario(String folioCliente, String estatusCliente) {
+    private void sincronizarEstatusUsuario(String folioCliente, EstatusPersona estatusCliente) {
         try {
             Optional<Usuario> usuarioOpt = authService.obtenerUsuarioPorIdPersona(folioCliente);
 
             if (usuarioOpt.isPresent()) {
                 Usuario usuario = usuarioOpt.get();
-                String estatusUsuario = "Activo".equals(estatusCliente) ? "Activo" : "Inactivo";
+                EstatusUsuario estatusUsuario = EstatusPersona.Activo.equals(estatusCliente) ? EstatusUsuario.Activo : EstatusUsuario.Inactivo;
 
                 if (!estatusUsuario.equals(usuario.getEstatus())) {
                     usuario.setEstatus(estatusUsuario);
                     // Si se activa el cliente, resetear intentos de login
-                    if ("Activo".equals(estatusUsuario)) {
+                    if (EstatusUsuario.Activo.equals(estatusUsuario)) {
                         usuario.setIntentosLogin(0);
                         usuario.setFechaBloqueo(null);
                     }
@@ -276,11 +260,11 @@ public class ClienteServiceImpl {
                     // Guardar cambios en el usuario
                     usuarioRepository.save(usuario);
 
-                    System.out.println("✅ Estatus de usuario actualizado: " + usuario.getUsername() + " -> " + estatusUsuario);
+                    log.info("✅ Estatus de usuario actualizado: " + usuario.getUsername() + " -> " + estatusUsuario);
                 }
             }
         } catch (Exception e) {
-            System.err.println("❌ Error al sincronizar estatus de usuario: " + e.getMessage());
+            log.error("❌ Error al sincronizar estatus de usuario: " + e.getMessage());
             throw new RuntimeException("Error al sincronizar estatus de usuario");
         }
     }
@@ -289,12 +273,12 @@ public class ClienteServiceImpl {
 
     private String generarFolioCliente() {
         try {
-            System.out.println("🔍 Buscando último folio de cliente...");
+            log.info("🔍 Buscando último folio de cliente...");
 
             List<Cliente> todosClientes = clienteRepository.findAll();
 
             if (todosClientes.isEmpty()) {
-                System.out.println("✅ No hay clientes, empezando con CLI001");
+                log.info("✅ No hay clientes, empezando con CLI001");
                 return "CLI001";
             }
 
@@ -312,31 +296,31 @@ public class ClienteServiceImpl {
                             ultimoFolio = folio;
                         }
                     } catch (NumberFormatException e) {
-                        System.err.println("⚠ Folio con formato inválido: " + folio);
+                        log.error("⚠ Folio con formato inválido: " + folio);
                     }
                 }
             }
 
             if (ultimoFolio == null) {
-                System.out.println("✅ No se encontraron folios válidos, empezando con CLI001");
+                log.info("✅ No se encontraron folios válidos, empezando con CLI001");
                 return "CLI001";
             }
 
             int nuevoNumero = maxNumero + 1;
             String nuevoFolio = String.format("CLI%03d", nuevoNumero);
 
-            System.out.println("📊 Último folio encontrado: " + ultimoFolio);
-            System.out.println("🎯 Nuevo folio generado: " + nuevoFolio);
+            log.info("📊 Último folio encontrado: " + ultimoFolio);
+            log.info("🎯 Nuevo folio generado: " + nuevoFolio);
 
             return nuevoFolio;
 
         } catch (Exception e) {
-            System.err.println("❌ Error crítico al generar folio: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Error crítico al generar folio: " + e.getMessage());
+            log.error("Error: ", e);
 
             long totalClientes = clienteRepository.count();
             String folioFallback = String.format("CLI%03d", totalClientes + 1);
-            System.out.println("🔄 Usando fallback: " + folioFallback);
+            log.info("🔄 Usando fallback: " + folioFallback);
             return folioFallback;
         }
     }
@@ -347,7 +331,7 @@ public class ClienteServiceImpl {
     public Cliente crearClienteConFoto(String nombre, String telefono, String email,
                                        String fechaNacimiento, String genero, String estatus,
                                        MultipartFile foto) throws IOException {
-        System.out.println("🚀 Iniciando creación de cliente con foto...");
+        log.info("🚀 Iniciando creación de cliente con foto...");
 
         // ✅ VALIDAR QUE EL EMAIL ES OBLIGATORIO
         if (email == null || email.trim().isEmpty()) {
@@ -364,7 +348,7 @@ public class ClienteServiceImpl {
         cliente.setTelefono(telefono);
         cliente.setEmail(email); // Email es obligatorio
         cliente.setGenero(genero);
-        cliente.setEstatus(estatus != null ? estatus : "Activo");
+        cliente.setEstatus(estatus != null ? EstatusPersona.fromString(estatus) : EstatusPersona.Activo);
         cliente.setFechaRegistro(LocalDateTime.now());
 
         if (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty()) {
@@ -374,7 +358,7 @@ public class ClienteServiceImpl {
         if (foto != null && !foto.isEmpty()) {
             String nombreArchivoFoto = guardarArchivo(foto, folioGenerado);
             cliente.setNombreArchivoFoto(nombreArchivoFoto);
-            System.out.println("📸 Foto guardada: " + nombreArchivoFoto);
+            log.info("📸 Foto guardada: " + nombreArchivoFoto);
         }
 
         // Validar email único
@@ -388,14 +372,14 @@ public class ClienteServiceImpl {
         }
 
         Cliente clienteGuardado = clienteRepository.save(cliente);
-        System.out.println("✅ Cliente creado exitosamente: " + folioGenerado);
+        log.info("✅ Cliente creado exitosamente: " + folioGenerado);
 
         // ✅ Crear usuario automáticamente para el cliente
         try {
             crearUsuarioParaCliente(clienteGuardado);
-            System.out.println("✅ Usuario creado automáticamente para el cliente: " + folioGenerado);
+            log.info("✅ Usuario creado automáticamente para el cliente: " + folioGenerado);
         } catch (Exception e) {
-            System.err.println("⚠ Advertencia: No se pudo crear el usuario para el cliente: " + e.getMessage());
+            log.error("⚠ Advertencia: No se pudo crear el usuario para el cliente: " + e.getMessage());
             // No lanzamos excepción para no revertir la creación del cliente
         }
 
@@ -414,7 +398,7 @@ public class ClienteServiceImpl {
     // ==================== MÉTODOS ORIGINALES ====================
 
     public Cliente crearCliente(Cliente cliente) {
-        System.out.println("🚀 Iniciando creación de cliente...");
+        log.info("🚀 Iniciando creación de cliente...");
 
         // ✅ VALIDAR QUE EL EMAIL ES OBLIGATORIO
         if (cliente.getEmail() == null || cliente.getEmail().trim().isEmpty()) {
@@ -424,14 +408,14 @@ public class ClienteServiceImpl {
         String folioGenerado = generarFolioCliente();
         cliente.setFolioCliente(folioGenerado);
 
-        System.out.println("📝 Folio asignado: " + folioGenerado);
+        log.info("📝 Folio asignado: " + folioGenerado);
 
         if (cliente.getFechaRegistro() == null) {
             cliente.setFechaRegistro(LocalDateTime.now());
         }
 
         if (cliente.getEstatus() == null) {
-            cliente.setEstatus("Activo");
+            cliente.setEstatus(EstatusPersona.Activo);
         }
 
         // Validaciones de unicidad
@@ -444,14 +428,14 @@ public class ClienteServiceImpl {
         }
 
         Cliente clienteGuardado = clienteRepository.save(cliente);
-        System.out.println("✅ Cliente guardado exitosamente: " + clienteGuardado.getFolioCliente());
+        log.info("✅ Cliente guardado exitosamente: " + clienteGuardado.getFolioCliente());
 
         // ✅ Crear usuario automáticamente
         try {
             crearUsuarioParaCliente(clienteGuardado);
-            System.out.println("✅ Usuario creado automáticamente para el cliente: " + folioGenerado);
+            log.info("✅ Usuario creado automáticamente para el cliente: " + folioGenerado);
         } catch (Exception e) {
-            System.err.println("⚠ Advertencia: No se pudo crear el usuario para el cliente: " + e.getMessage());
+            log.error("⚠ Advertencia: No se pudo crear el usuario para el cliente: " + e.getMessage());
         }
 
         return clienteGuardado;
@@ -470,9 +454,9 @@ public class ClienteServiceImpl {
 
     public List<Cliente> obtenerClientesFiltrados(String estatus, String genero) {
         if (estatus != null && genero != null) {
-            return clienteRepository.findByEstatusAndGenero(estatus, genero);
+            return clienteRepository.findByEstatusAndGenero(EstatusPersona.fromString(estatus), genero);
         } else if (estatus != null) {
-            return clienteRepository.findByEstatus(estatus);
+            return clienteRepository.findByEstatus(EstatusPersona.fromString(estatus));
         } else if (genero != null) {
             return clienteRepository.findByGenero(genero);
         } else {
@@ -482,7 +466,7 @@ public class ClienteServiceImpl {
 
     @Transactional
     public Cliente actualizarCliente(String folioCliente, Cliente clienteActualizado) {
-        System.out.println("✏ Actualizando cliente: " + folioCliente);
+        log.info("✏ Actualizando cliente: " + folioCliente);
 
         Cliente clienteExistente = obtenerClientePorId(folioCliente);
 
@@ -520,7 +504,7 @@ public class ClienteServiceImpl {
         }
 
         Cliente clienteActualizadoDb = clienteRepository.save(clienteExistente);
-        System.out.println("✅ Cliente actualizado: " + clienteActualizadoDb.getFolioCliente());
+        log.info("✅ Cliente actualizado: " + clienteActualizadoDb.getFolioCliente());
 
         return clienteActualizadoDb;
     }
@@ -528,40 +512,38 @@ public class ClienteServiceImpl {
     // ==================== GESTIÓN DE ESTATUS ====================
 
     @Transactional
-    public Cliente cambiarEstatusCliente(String folioCliente, String nuevoEstatus) {
+    public Cliente cambiarEstatusCliente(String folioCliente, EstatusPersona nuevoEstatus) {
         Cliente cliente = obtenerClientePorId(folioCliente);
         cliente.setEstatus(nuevoEstatus);
-
         Cliente clienteActualizado = clienteRepository.save(cliente);
-
-        // ✅ Sincronizar estatus con el usuario
         try {
             sincronizarEstatusUsuario(folioCliente, nuevoEstatus);
         } catch (Exception e) {
-            System.err.println("⚠ Advertencia: No se pudo sincronizar el estatus del usuario: " + e.getMessage());
+            log.error("Advertencia: " + e.getMessage());
         }
-
         return clienteActualizado;
     }
-
+    public Cliente cambiarEstatusCliente(String folioCliente, String nuevoEstatusStr) {
+        return cambiarEstatusCliente(folioCliente, EstatusPersona.fromString(nuevoEstatusStr));
+    }
     public Cliente desactivarCliente(String folioCliente) {
-        return cambiarEstatusCliente(folioCliente, "Inactivo");
+        return cambiarEstatusCliente(folioCliente, EstatusPersona.Inactivo);
     }
 
     public Cliente activarCliente(String folioCliente) {
-        return cambiarEstatusCliente(folioCliente, "Activo");
+        return cambiarEstatusCliente(folioCliente, EstatusPersona.Activo);
     }
 
     public void eliminarCliente(String folioCliente) {
         // Primero desactivar el cliente
-        Cliente clienteDesactivado = cambiarEstatusCliente(folioCliente, "Inactivo");
+        Cliente clienteDesactivado = cambiarEstatusCliente(folioCliente, EstatusPersona.Inactivo);
 
         // Luego desactivar el usuario asociado
         try {
-            sincronizarEstatusUsuario(folioCliente, "Inactivo");
-            System.out.println("✅ Cliente y usuario desactivados: " + folioCliente);
+            sincronizarEstatusUsuario(folioCliente, EstatusPersona.Inactivo);
+            log.info("✅ Cliente y usuario desactivados: " + folioCliente);
         } catch (Exception e) {
-            System.err.println("⚠ Cliente desactivado pero no se pudo desactivar el usuario: " + e.getMessage());
+            log.error("⚠ Cliente desactivado pero no se pudo desactivar el usuario: " + e.getMessage());
         }
     }
 
@@ -625,7 +607,7 @@ public class ClienteServiceImpl {
     }
 
     public List<Cliente> obtenerClientesActivos() {
-        return clienteRepository.findByEstatusOrderByNombreAsc("Activo");
+        return clienteRepository.findByEstatusOrderByNombreAsc(EstatusPersona.Activo);
     }
 
     public List<Cliente> buscarClientesPorNombre(String nombre) {
@@ -633,7 +615,7 @@ public class ClienteServiceImpl {
     }
 
     public Long contarClientesActivos() {
-        return clienteRepository.countByEstatus("Activo");
+        return clienteRepository.countByEstatus(EstatusPersona.Activo);
     }
 
     public List<Cliente> obtenerClientesConMembresiaActiva() {
@@ -651,7 +633,7 @@ public class ClienteServiceImpl {
         }
 
         clienteRepository.delete(cliente);
-        System.out.println("✅ Cliente eliminado completamente: " + folioCliente);
+        log.info("✅ Cliente eliminado completamente: " + folioCliente);
     }
 
     // ==================== OBTENER FOTO ====================
@@ -677,8 +659,8 @@ public class ClienteServiceImpl {
         Map<String, Object> estadisticas = new HashMap<>();
 
         estadisticas.put("totalClientes", clienteRepository.count());
-        estadisticas.put("clientesActivos", clienteRepository.countByEstatus("Activo"));
-        estadisticas.put("clientesInactivos", clienteRepository.countByEstatus("Inactivo"));
+        estadisticas.put("clientesActivos", clienteRepository.countByEstatus(EstatusPersona.Activo));
+        estadisticas.put("clientesInactivos", clienteRepository.countByEstatus(EstatusPersona.Inactivo));
         estadisticas.put("clientesConMembresiaActiva", clienteRepository.findClientesConMembresiaActiva().size());
 
         return estadisticas;
@@ -691,7 +673,7 @@ public class ClienteServiceImpl {
      */
     @Transactional
     public Cliente actualizarUrlFoto(String folioCliente, String urlFoto) {
-        System.out.println("📸 Actualizando URL de foto para: " + folioCliente);
+        log.info("📸 Actualizando URL de foto para: " + folioCliente);
 
         Cliente clienteExistente = obtenerClientePorId(folioCliente);
 
@@ -704,7 +686,7 @@ public class ClienteServiceImpl {
                 }
 
                 clienteExistente.setNombreArchivoFoto(urlFoto.trim());
-                System.out.println("✅ URL de foto validada y guardada: " +
+                log.info("✅ URL de foto validada y guardada: " +
                         (urlFoto.length() > 100 ? urlFoto.substring(0, 100) + "..." : urlFoto));
             } catch (Exception e) {
                 throw new RuntimeException("Error al validar URL: " + e.getMessage());
@@ -712,11 +694,11 @@ public class ClienteServiceImpl {
         } else {
             // Si la URL está vacía, eliminar la foto
             clienteExistente.setNombreArchivoFoto(null);
-            System.out.println("🗑 Foto eliminada (URL vacía)");
+            log.info("🗑 Foto eliminada (URL vacía)");
         }
 
         Cliente clienteActualizado = clienteRepository.save(clienteExistente);
-        System.out.println("✅ URL de foto actualizada para: " + folioCliente);
+        log.info("✅ URL de foto actualizada para: " + folioCliente);
 
         return clienteActualizado;
     }
@@ -758,7 +740,7 @@ public class ClienteServiceImpl {
                                             String email, String fechaNacimiento, String genero,
                                             String estatus, MultipartFile foto,
                                             boolean eliminarFoto, String nombreArchivoFoto) throws IOException {
-        System.out.println("✏ Actualizando cliente con URL de foto: " + folioCliente);
+        log.info("✏ Actualizando cliente con URL de foto: " + folioCliente);
 
         Cliente clienteExistente = obtenerClientePorId(folioCliente);
 
@@ -789,7 +771,7 @@ public class ClienteServiceImpl {
             // Si se envía una URL, validarla y usarla directamente
             if (esUrlValida(nombreArchivoFoto)) {
                 clienteExistente.setNombreArchivoFoto(nombreArchivoFoto.trim());
-                System.out.println("📸 URL de foto actualizada: " +
+                log.info("📸 URL de foto actualizada: " +
                         (nombreArchivoFoto.length() > 100 ? nombreArchivoFoto.substring(0, 100) + "..." : nombreArchivoFoto));
             } else {
                 throw new RuntimeException("La URL de foto proporcionada no es válida");
@@ -801,7 +783,7 @@ public class ClienteServiceImpl {
                     eliminarArchivo(clienteExistente.getNombreArchivoFoto());
                 }
                 clienteExistente.setNombreArchivoFoto(null);
-                System.out.println("🗑 Foto eliminada");
+                log.info("🗑 Foto eliminada");
             }
         } else if (foto != null && !foto.isEmpty()) {
             // Si se sube un archivo, eliminar la anterior (si es local) y guardar la nueva
@@ -811,11 +793,11 @@ public class ClienteServiceImpl {
             }
             String nombreArchivoFotoGuardado = guardarArchivo(foto, folioCliente);
             clienteExistente.setNombreArchivoFoto(nombreArchivoFotoGuardado);
-            System.out.println("📸 Foto actualizada: " + nombreArchivoFotoGuardado);
+            log.info("📸 Foto actualizada: " + nombreArchivoFotoGuardado);
         }
 
         Cliente clienteActualizado = clienteRepository.save(clienteExistente);
-        System.out.println("✅ Cliente actualizado: " + folioCliente);
+        log.info("✅ Cliente actualizado: " + folioCliente);
 
         return clienteActualizado;
     }

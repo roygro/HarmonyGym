@@ -1,8 +1,9 @@
 package com.example.harmonyGymBack.rest;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.harmonyGymBack.model.Recepcionista;
 import com.example.harmonyGymBack.service.RecepcionistaServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,12 +14,17 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@PreAuthorize("hasRole('ADMINISTRADOR')")
 @RequestMapping("/api/recepcionistas")
 @CrossOrigin(origins = "*")
 public class RecepcionistaController {
 
-    @Autowired
-    private RecepcionistaServiceImpl recepcionistaService;
+    private final RecepcionistaServiceImpl recepcionistaService;
+
+    public RecepcionistaController(RecepcionistaServiceImpl recepcionistaService) {
+        this.recepcionistaService = recepcionistaService;
+    }
+
 
     // ==================== CREAR RECEPCIONISTA ====================
 

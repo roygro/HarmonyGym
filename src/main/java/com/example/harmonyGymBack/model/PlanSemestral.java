@@ -15,7 +15,7 @@ public class PlanSemestral extends PlanPago {
 
     @Override
     public LocalDate calcularFechaFin(LocalDate fechaInicio) {
-        return fechaInicio.plusDays(getDuracionDias());
+        return fechaInicio.plusDays(Math.max(0, getDuracionDias() - 1));
     }
 
     @Override

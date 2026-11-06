@@ -1,6 +1,10 @@
 package com.example.harmonyGymBack.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.example.harmonyGymBack.model.Recepcionista;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import com.example.harmonyGymBack.repository.RecepcionistaRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -17,9 +21,44 @@ import java.util.Optional;
 
 @Service
 public class RecepcionistaServiceImpl {
+    private static final Logger log = LoggerFactory.getLogger(RecepcionistaServiceImpl.class);
+
 
     @Autowired
-    private RecepcionistaRepository recepcionistaRepository;
+    private com.example.harmonyGymBack.repository.UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private com.example.harmonyGymBack.service.AuthService authService;
+
+    private void sincronizarEstatusUsuario(String idRecepcionista, EstatusPersona estatusRecepcionista) {
+        try {
+            java.util.Optional<com.example.harmonyGymBack.model.Usuario> usuarioOpt = authService.obtenerUsuarioPorIdPersona(idRecepcionista);
+            if (usuarioOpt.isPresent()) {
+                com.example.harmonyGymBack.model.Usuario usuario = usuarioOpt.get();
+                com.example.harmonyGymBack.model.enums.EstatusUsuario estatusUsuario = 
+                    EstatusPersona.Activo.equals(estatusRecepcionista) ? 
+                    com.example.harmonyGymBack.model.enums.EstatusUsuario.Activo : 
+                    com.example.harmonyGymBack.model.enums.EstatusUsuario.Inactivo;
+
+                usuario.setEstatus(estatusUsuario);
+                if (com.example.harmonyGymBack.model.enums.EstatusUsuario.Activo.equals(estatusUsuario)) {
+                    usuario.setIntentosLogin(0);
+                    usuario.setFechaBloqueo(null);
+                }
+                usuarioRepository.save(usuario);
+            }
+        } catch (Exception e) {
+            log.error("Advertencia sincronizando usuario de recepcionista: " + e.getMessage());
+        }
+    }
+
+
+    private final RecepcionistaRepository recepcionistaRepository;
+
+    public RecepcionistaServiceImpl(RecepcionistaRepository recepcionistaRepository) {
+        this.recepcionistaRepository = recepcionistaRepository;
+    }
+
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -28,12 +67,12 @@ public class RecepcionistaServiceImpl {
 
     private String generarIdRecepcionista() {
         try {
-            System.out.println("🔍 Buscando último ID de recepcionista...");
+            log.info("🔍 Buscando último ID de recepcionista...");
 
             List<Recepcionista> todosRecepcionistas = recepcionistaRepository.findAll();
 
             if (todosRecepcionistas.isEmpty()) {
-                System.out.println("✅ No hay recepcionistas, empezando con REC001");
+                log.info("✅ No hay recepcionistas, empezando con REC001");
                 return "REC001";
             }
 
@@ -51,31 +90,31 @@ public class RecepcionistaServiceImpl {
                             ultimoId = id;
                         }
                     } catch (NumberFormatException e) {
-                        System.err.println("⚠ ID con formato inválido: " + id);
+                        log.error("⚠ ID con formato inválido: " + id);
                     }
                 }
             }
 
             if (ultimoId == null) {
-                System.out.println("✅ No se encontraron IDs válidos, empezando con REC001");
+                log.info("✅ No se encontraron IDs válidos, empezando con REC001");
                 return "REC001";
             }
 
             int nuevoNumero = maxNumero + 1;
             String nuevoId = String.format("REC%03d", nuevoNumero);
 
-            System.out.println("📊 Último ID encontrado: " + ultimoId);
-            System.out.println("🎯 Nuevo ID generado: " + nuevoId);
+            log.info("📊 Último ID encontrado: " + ultimoId);
+            log.info("🎯 Nuevo ID generado: " + nuevoId);
 
             return nuevoId;
 
         } catch (Exception e) {
-            System.err.println("❌ Error crítico al generar ID: " + e.getMessage());
-            e.printStackTrace();
+            log.error("❌ Error crítico al generar ID: " + e.getMessage());
+            log.error("Error: ", e);
 
             long totalRecepcionistas = recepcionistaRepository.count();
             String idFallback = String.format("REC%03d", totalRecepcionistas + 1);
-            System.out.println("🔄 Usando fallback: " + idFallback);
+            log.info("🔄 Usando fallback: " + idFallback);
             return idFallback;
         }
     }
@@ -85,7 +124,7 @@ public class RecepcionistaServiceImpl {
     @Transactional
     public Recepcionista crearRecepcionista(String nombre, String telefono, String email,
                                             String fechaContratacion, String estatus) {
-        System.out.println("🚀 Iniciando creación de recepcionista...");
+        log.info("🚀 Iniciando creación de recepcionista...");
 
         String idGenerado = generarIdRecepcionista();
 
@@ -94,7 +133,7 @@ public class RecepcionistaServiceImpl {
         recepcionista.setNombre(nombre);
         recepcionista.setTelefono(telefono);
         recepcionista.setEmail(email);
-        recepcionista.setEstatus(estatus != null ? estatus : "Activo");
+        recepcionista.setEstatus(estatus != null ? EstatusPersona.fromString(estatus) : EstatusPersona.Activo);
         recepcionista.setFechaRegistro(LocalDateTime.now());
 
         if (fechaContratacion != null && !fechaContratacion.trim().isEmpty()) {
@@ -114,7 +153,7 @@ public class RecepcionistaServiceImpl {
         }
 
         Recepcionista recepcionistaGuardado = recepcionistaRepository.save(recepcionista);
-        System.out.println("✅ Recepcionista creado exitosamente: " + idGenerado);
+        log.info("✅ Recepcionista creado exitosamente: " + idGenerado);
 
         return recepcionistaGuardado;
     }
@@ -124,7 +163,7 @@ public class RecepcionistaServiceImpl {
     @Transactional
     public Recepcionista actualizarRecepcionista(String idRecepcionista, String nombre, String telefono,
                                                  String email, String fechaContratacion, String estatus) {
-        System.out.println("✏ Actualizando recepcionista: " + idRecepcionista);
+        log.info("✏ Actualizando recepcionista: " + idRecepcionista);
 
         Recepcionista recepcionistaExistente = obtenerRecepcionistaPorId(idRecepcionista);
 
@@ -148,7 +187,7 @@ public class RecepcionistaServiceImpl {
         }
 
         Recepcionista recepcionistaActualizado = recepcionistaRepository.save(recepcionistaExistente);
-        System.out.println("✅ Recepcionista actualizado: " + idRecepcionista);
+        log.info("✅ Recepcionista actualizado: " + idRecepcionista);
 
         return recepcionistaActualizado;
     }
@@ -156,12 +195,12 @@ public class RecepcionistaServiceImpl {
     // ==================== MÉTODOS ORIGINALES ====================
 
     public Recepcionista crearRecepcionista(Recepcionista recepcionista) {
-        System.out.println("🚀 Iniciando creación de recepcionista...");
+        log.info("🚀 Iniciando creación de recepcionista...");
 
         String idGenerado = generarIdRecepcionista();
         recepcionista.setIdRecepcionista(idGenerado);
 
-        System.out.println("📝 ID asignado: " + idGenerado);
+        log.info("📝 ID asignado: " + idGenerado);
 
         if (recepcionista.getFechaRegistro() == null) {
             recepcionista.setFechaRegistro(LocalDateTime.now());
@@ -172,7 +211,7 @@ public class RecepcionistaServiceImpl {
         }
 
         if (recepcionista.getEstatus() == null) {
-            recepcionista.setEstatus("Activo");
+            recepcionista.setEstatus(EstatusPersona.Activo);
         }
 
         // Validaciones de unicidad
@@ -185,7 +224,7 @@ public class RecepcionistaServiceImpl {
         }
 
         Recepcionista recepcionistaGuardado = recepcionistaRepository.save(recepcionista);
-        System.out.println("✅ Recepcionista guardado exitosamente: " + recepcionistaGuardado.getIdRecepcionista());
+        log.info("✅ Recepcionista guardado exitosamente: " + recepcionistaGuardado.getIdRecepcionista());
 
         return recepcionistaGuardado;
     }
@@ -203,7 +242,7 @@ public class RecepcionistaServiceImpl {
 
     public List<Recepcionista> obtenerRecepcionistasFiltrados(String estatus) {
         if (estatus != null) {
-            return recepcionistaRepository.findByEstatus(estatus);
+            return recepcionistaRepository.findByEstatus(EstatusPersona.fromString(estatus));
         } else {
             return recepcionistaRepository.findAll();
         }
@@ -211,7 +250,7 @@ public class RecepcionistaServiceImpl {
 
     @Transactional
     public Recepcionista actualizarRecepcionista(String idRecepcionista, Recepcionista recepcionistaActualizado) {
-        System.out.println("✏ Actualizando recepcionista: " + idRecepcionista);
+        log.info("✏ Actualizando recepcionista: " + idRecepcionista);
 
         Recepcionista recepcionistaExistente = obtenerRecepcionistaPorId(idRecepcionista);
 
@@ -243,7 +282,7 @@ public class RecepcionistaServiceImpl {
         }
 
         Recepcionista recepcionistaActualizadoDb = recepcionistaRepository.save(recepcionistaExistente);
-        System.out.println("✅ Recepcionista actualizado: " + recepcionistaActualizadoDb.getIdRecepcionista());
+        log.info("✅ Recepcionista actualizado: " + recepcionistaActualizadoDb.getIdRecepcionista());
 
         return recepcionistaActualizadoDb;
     }
@@ -251,18 +290,20 @@ public class RecepcionistaServiceImpl {
     // ==================== GESTIÓN DE ESTATUS ====================
 
     @Transactional
-    public Recepcionista cambiarEstatusRecepcionista(String idRecepcionista, String nuevoEstatus) {
+    public Recepcionista cambiarEstatusRecepcionista(String idRecepcionista, EstatusPersona nuevoEstatus) {
         Recepcionista recepcionista = obtenerRecepcionistaPorId(idRecepcionista);
         recepcionista.setEstatus(nuevoEstatus);
         return recepcionistaRepository.save(recepcionista);
     }
-
+    public Recepcionista cambiarEstatusRecepcionista(String idRecepcionista, String nuevoEstatusStr) {
+        return cambiarEstatusRecepcionista(idRecepcionista, EstatusPersona.fromString(nuevoEstatusStr));
+    }
     public Recepcionista desactivarRecepcionista(String idRecepcionista) {
-        return cambiarEstatusRecepcionista(idRecepcionista, "Inactivo");
+        return cambiarEstatusRecepcionista(idRecepcionista, EstatusPersona.Inactivo);
     }
 
     public Recepcionista activarRecepcionista(String idRecepcionista) {
-        return cambiarEstatusRecepcionista(idRecepcionista, "Activo");
+        return cambiarEstatusRecepcionista(idRecepcionista, EstatusPersona.Activo);
     }
 
     public void eliminarRecepcionista(String idRecepcionista) {
@@ -314,7 +355,7 @@ public class RecepcionistaServiceImpl {
     }
 
     public List<Recepcionista> obtenerRecepcionistasActivos() {
-        return recepcionistaRepository.findByEstatusOrderByNombreAsc("Activo");
+        return recepcionistaRepository.findByEstatusOrderByNombreAsc(EstatusPersona.Activo);
     }
 
     public List<Recepcionista> buscarRecepcionistasPorNombre(String nombre) {
@@ -322,7 +363,7 @@ public class RecepcionistaServiceImpl {
     }
 
     public Long contarRecepcionistasActivos() {
-        return recepcionistaRepository.countByEstatus("Activo");
+        return recepcionistaRepository.countByEstatus(EstatusPersona.Activo);
     }
 
     public List<Recepcionista> obtenerRecepcionistasContratadosEnRango(LocalDate fechaInicio, LocalDate fechaFin) {
@@ -335,7 +376,7 @@ public class RecepcionistaServiceImpl {
     public void eliminarRecepcionistaCompleto(String idRecepcionista) {
         Recepcionista recepcionista = obtenerRecepcionistaPorId(idRecepcionista);
         recepcionistaRepository.delete(recepcionista);
-        System.out.println("✅ Recepcionista eliminado completamente: " + idRecepcionista);
+        log.info("✅ Recepcionista eliminado completamente: " + idRecepcionista);
     }
 
     // ==================== DASHBOARD ESTADÍSTICAS ====================
@@ -344,8 +385,8 @@ public class RecepcionistaServiceImpl {
         Map<String, Object> estadisticas = new HashMap<>();
 
         estadisticas.put("totalRecepcionistas", recepcionistaRepository.count());
-        estadisticas.put("recepcionistasActivos", recepcionistaRepository.countByEstatus("Activo"));
-        estadisticas.put("recepcionistasInactivos", recepcionistaRepository.countByEstatus("Inactivo"));
+        estadisticas.put("recepcionistasActivos", recepcionistaRepository.countByEstatus(EstatusPersona.Activo));
+        estadisticas.put("recepcionistasInactivos", recepcionistaRepository.countByEstatus(EstatusPersona.Inactivo));
 
         // Recepcionistas contratados este mes
         LocalDate inicioMes = LocalDate.now().withDayOfMonth(1);

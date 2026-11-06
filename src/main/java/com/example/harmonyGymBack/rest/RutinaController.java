@@ -2,8 +2,8 @@ package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.Cliente;
 import com.example.harmonyGymBack.model.RutinaEntity;
+import com.example.harmonyGymBack.model.enums.EstatusRutina;
 import com.example.harmonyGymBack.service.RutinaServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,8 +16,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class RutinaController {
 
-    @Autowired
-    private RutinaServiceImpl rutinaService;
+    private final RutinaServiceImpl rutinaService;
+
+    public RutinaController(RutinaServiceImpl rutinaService) {
+        this.rutinaService = rutinaService;
+    }
+
 
     @GetMapping
     public List<RutinaEntity> getAllRutinas() {
@@ -227,7 +231,7 @@ public class RutinaController {
             @RequestBody CambioEstatusRequest request) {
 
         try {
-            RutinaEntity rutinaActualizada = rutinaService.cambiarEstatusRutina(folioRutina, request.getEstatus());
+            RutinaEntity rutinaActualizada = rutinaService.cambiarEstatusRutina(folioRutina, EstatusRutina.fromString(request.getEstatus()));
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -287,7 +291,7 @@ public class RutinaController {
     @GetMapping("/estatus/{estatus}")
     public ResponseEntity<List<RutinaEntity>> getRutinasByEstatus(@PathVariable String estatus) {
         try {
-            List<RutinaEntity> rutinas = rutinaService.findByEstatus(estatus);
+            List<RutinaEntity> rutinas = rutinaService.findByEstatus(EstatusRutina.fromString(estatus));
             return ResponseEntity.ok(rutinas);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();

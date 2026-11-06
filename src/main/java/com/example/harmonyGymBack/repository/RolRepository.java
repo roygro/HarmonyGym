@@ -14,6 +14,7 @@ public interface RolRepository extends JpaRepository<Rol, String> {
 
     // Buscar rol por nombre
     Optional<Rol> findByNombreRol(String nombreRol);
+    Optional<Rol> findByNombreRolIgnoreCase(String nombreRol);
 
     // Buscar roles por tipo de usuario
     @Query(value = "SELECT r.* FROM ROL r WHERE r.id_rol IN (" +

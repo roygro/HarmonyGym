@@ -1,5 +1,6 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,7 +25,7 @@ public class Recepcionista {
     private LocalDate fechaContratacion;
 
     @Column(name = "Estatus")
-    private String estatus = "Activo";
+    private EstatusPersona estatus = EstatusPersona.Activo;
 
     @Column(name = "Fecha_Registro")
     private LocalDateTime fechaRegistro;
@@ -42,17 +43,13 @@ public class Recepcionista {
         this.email = email;
         this.fechaContratacion = fechaContratacion;
         this.fechaRegistro = LocalDateTime.now();
+        this.estatus = EstatusPersona.Activo;
     }
 
     public Recepcionista(String idRecepcionista, String nombre, String telefono,
-                         String email, LocalDate fechaContratacion, String estatus) {
-        this.idRecepcionista = idRecepcionista;
-        this.nombre = nombre;
-        this.telefono = telefono;
-        this.email = email;
-        this.fechaContratacion = fechaContratacion;
-        this.estatus = estatus;
-        this.fechaRegistro = LocalDateTime.now();
+                         String email, LocalDate fechaContratacion, EstatusPersona estatus) {
+        this(idRecepcionista, nombre, telefono, email, fechaContratacion);
+        this.estatus = estatus != null ? estatus : EstatusPersona.Activo;
     }
 
     // Getters y Setters
@@ -71,8 +68,9 @@ public class Recepcionista {
     public LocalDate getFechaContratacion() { return fechaContratacion; }
     public void setFechaContratacion(LocalDate fechaContratacion) { this.fechaContratacion = fechaContratacion; }
 
-    public String getEstatus() { return estatus; }
-    public void setEstatus(String estatus) { this.estatus = estatus; }
+    public EstatusPersona getEstatus() { return estatus; }
+    public void setEstatus(EstatusPersona estatus) { this.estatus = estatus; }
+    public void setEstatus(String estatus) { this.estatus = EstatusPersona.fromString(estatus); }
 
     public LocalDateTime getFechaRegistro() { return fechaRegistro; }
     public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
@@ -85,7 +83,7 @@ public class Recepcionista {
                 ", telefono='" + telefono + '\'' +
                 ", email='" + email + '\'' +
                 ", fechaContratacion=" + fechaContratacion +
-                ", estatus='" + estatus + '\'' +
+                ", estatus=" + estatus +
                 ", fechaRegistro=" + fechaRegistro +
                 '}';
     }

@@ -1,26 +1,31 @@
 package com.example.harmonyGymBack.rest;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.harmonyGymBack.model.Pago;
 import com.example.harmonyGymBack.service.PagoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA')")
 @RequestMapping("/api/pagos")
 @CrossOrigin(origins = "*")
 public class PagoController {
 
-    @Autowired
-    private PagoService pagoService;
+    private final PagoService pagoService;
 
-    // POST - Crear nuevo pago (SIN DTO)
+    public PagoController(PagoService pagoService) {
+        this.pagoService = pagoService;
+    }
+
+
+    // POST - Crear nuevo pago
     @PostMapping
     public ResponseEntity<?> crearPago(@RequestBody Pago pago) {
         try {
-            // Validaciones mejoradas
             if (pago.getFolioCliente() == null || pago.getFolioCliente().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("El folio del cliente es requerido");
             }
@@ -29,19 +34,15 @@ public class PagoController {
                 return ResponseEntity.badRequest().body("El tipo de pago es requerido");
             }
 
-            // Validaciones específicas por tipo
-            if ("producto".equals(pago.getTipoPago())) {
+            if ("producto".equalsIgnoreCase(pago.getTipoPago())) {
                 if (pago.getCodigoProducto() == null || pago.getCodigoProducto().trim().isEmpty()) {
                     return ResponseEntity.badRequest().body("El código de producto es requerido para pagos de producto");
                 }
-            } else if ("membresia".equals(pago.getTipoPago())) {
+            } else if ("membresia".equalsIgnoreCase(pago.getTipoPago())) {
                 if (pago.getIdMembresia() == null || pago.getIdMembresia().trim().isEmpty()) {
                     return ResponseEntity.badRequest().body("El ID de membresía es requerido para pagos de membresía");
                 }
-                // Para membresías, forzar cantidad = 1
                 pago.setCantidad(1);
-            } else {
-                return ResponseEntity.badRequest().body("Tipo de pago no válido. Use 'producto' o 'membresia'");
             }
 
             if (pago.getTotal() == null || pago.getTotal() <= 0) {
@@ -57,7 +58,7 @@ public class PagoController {
         }
     }
 
-    // GET - Obtener todos los pagos (ordenados por fecha descendente)
+    // GET - Obtener todos los pagos
     @GetMapping
     public ResponseEntity<List<Pago>> obtenerTodosLosPagos() {
         try {
@@ -70,33 +71,23 @@ public class PagoController {
 
     // GET - Obtener pagos por cliente
     @GetMapping("/cliente/{folioCliente}")
-    public ResponseEntity<?> obtenerPagosPorCliente(@PathVariable String folioCliente) {
+    public ResponseEntity<List<Pago>> obtenerPagosPorCliente(@PathVariable String folioCliente) {
         try {
-            if (folioCliente == null || folioCliente.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("El folio del cliente es requerido");
-            }
-
             List<Pago> pagos = pagoService.obtenerPagosPorCliente(folioCliente);
             return ResponseEntity.ok(pagos);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body("Error al obtener pagos del cliente: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
         }
     }
 
     // GET - Obtener pagos por recepcionista
     @GetMapping("/recepcionista/{idRecepcionista}")
-    public ResponseEntity<?> obtenerPagosPorRecepcionista(@PathVariable String idRecepcionista) {
+    public ResponseEntity<List<Pago>> obtenerPagosPorRecepcionista(@PathVariable String idRecepcionista) {
         try {
-            if (idRecepcionista == null || idRecepcionista.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("El ID del recepcionista es requerido");
-            }
-
             List<Pago> pagos = pagoService.obtenerPagosPorRecepcionista(idRecepcionista);
             return ResponseEntity.ok(pagos);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body("Error al obtener pagos del recepcionista: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -108,12 +99,12 @@ public class PagoController {
             return ResponseEntity.ok(estadisticas);
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
-                    .body("Error al obtener estadísticas: " + e.getMessage());
+                    .body("Error al obtener estadísticas del día: " + e.getMessage());
         }
     }
 
     // GET - Obtener pagos por rango de fechas
-    @GetMapping("/rango-fechas")
+    @GetMapping("/rango")
     public ResponseEntity<?> obtenerPagosPorRangoFechas(
             @RequestParam String fechaInicio,
             @RequestParam String fechaFin) {
@@ -141,24 +132,6 @@ public class PagoController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                     .body("Error al obtener el pago: " + e.getMessage());
-        }
-    }
-
-    // GET - Obtener tipos de membresía disponibles (para el frontend)
-    @GetMapping("/tipos-membresia")
-    public ResponseEntity<?> obtenerTiposMembresia() {
-        try {
-            // Esto podría venir de otra tabla o ser estático
-            java.util.Map<String, Object>[] tipos = new java.util.Map[]{
-                    java.util.Map.of("codigo", "MEM_MENSUAL", "nombre", "Membresía Mensual", "precio", 500.00),
-                    java.util.Map.of("codigo", "MEM_TRIMESTRAL", "nombre", "Membresía Trimestral", "precio", 1350.00),
-                    java.util.Map.of("codigo", "MEM_ANUAL", "nombre", "Membresía Anual", "precio", 5000.00),
-                    java.util.Map.of("codigo", "MEM_INSCRIPCION", "nombre", "Inscripción", "precio", 250.00)
-            };
-            return ResponseEntity.ok(tipos);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body("Error al obtener tipos de membresía: " + e.getMessage());
         }
     }
 }

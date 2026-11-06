@@ -1,8 +1,8 @@
 package com.example.harmonyGymBack.service;
 
 import com.example.harmonyGymBack.model.Producto;
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import com.example.harmonyGymBack.repository.ProductoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,8 +11,12 @@ import java.util.Optional;
 @Service
 public class ProductoService {
 
-    @Autowired
-    private ProductoRepository productoRepository;
+    private final ProductoRepository productoRepository;
+
+    public ProductoService(ProductoRepository productoRepository) {
+        this.productoRepository = productoRepository;
+    }
+
 
     // ===== CRUD BÁSICO =====
 
@@ -76,12 +80,12 @@ public class ProductoService {
 
     // Obtener productos por estatus
     public List<Producto> obtenerProductosPorEstatus(String estatus) {
-        return productoRepository.findByEstatus(estatus);
+        return productoRepository.findByEstatus(EstatusPersona.fromString(estatus));
     }
 
     // Obtener productos activos
     public List<Producto> obtenerProductosActivos() {
-        return productoRepository.findByEstatusOrderByNombreAsc("Activo");
+        return productoRepository.findByEstatusOrderByNombreAsc(EstatusPersona.Activo);
     }
 
     // Buscar productos por nombre

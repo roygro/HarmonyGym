@@ -1,8 +1,8 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-
 
 @Entity
 @Table(name = "ejercicio")
@@ -42,19 +42,18 @@ public class EjercicioEntity {
     private String instrucciones;
 
     @Column(name = "estatus")
-    private String estatus;
+    private EstatusPersona estatus = EstatusPersona.Activo;
 
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 
-    // Relación con Instructor (debes agregar este campo a tu tabla)
     @Column(name = "folio_instructor")
     private String folioInstructor;
 
     // Constructores
     public EjercicioEntity() {
         this.fechaCreacion = LocalDateTime.now();
-        this.estatus = "Activo";
+        this.estatus = EstatusPersona.Activo;
     }
 
     // Getters y Setters
@@ -91,8 +90,9 @@ public class EjercicioEntity {
     public String getInstrucciones() { return instrucciones; }
     public void setInstrucciones(String instrucciones) { this.instrucciones = instrucciones; }
 
-    public String getEstatus() { return estatus; }
-    public void setEstatus(String estatus) { this.estatus = estatus; }
+    public EstatusPersona getEstatus() { return estatus; }
+    public void setEstatus(EstatusPersona estatus) { this.estatus = estatus; }
+    public void setEstatus(String estatus) { this.estatus = EstatusPersona.fromString(estatus); }
 
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }

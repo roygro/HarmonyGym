@@ -2,9 +2,9 @@ package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.Cliente;
 import com.example.harmonyGymBack.service.ClienteServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,8 +18,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class ClienteController {
 
-    @Autowired
-    private ClienteServiceImpl clienteService;
+    private final ClienteServiceImpl clienteService;
+
+    public ClienteController(ClienteServiceImpl clienteService) {
+        this.clienteService = clienteService;
+    }
+
 
     // ==================== CREAR CLIENTE CON FOTO ====================
 
@@ -109,6 +113,7 @@ public class ClienteController {
         }
     }
 
+    @PreAuthorize("@seguridadAcceso.puedeAccederCliente(#folioCliente, authentication)")
     @GetMapping("/{folioCliente}")
     public ResponseEntity<?> obtenerClientePorId(@PathVariable String folioCliente) {
         try {

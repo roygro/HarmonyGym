@@ -1,5 +1,6 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusInscripcion;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDate;
@@ -27,7 +28,7 @@ public class RealizaActividad {
     private LocalDate fechaParticipacion;
 
     @Column(name = "estatus")
-    private String estatus = "Inscrito"; // Inscrito, Completado, Cancelado, NoShow
+    private EstatusInscripcion estatus = EstatusInscripcion.Inscrito; // Inscrito, Completado, Cancelado
 
     @Column(name = "asistio")
     private Boolean asistio = false;
@@ -62,7 +63,7 @@ public class RealizaActividad {
         this.folioCliente = folioCliente;
         this.idActividad = idActividad;
         this.fechaInscripcion = LocalDateTime.now();
-        this.estatus = "Inscrito";
+        this.estatus = EstatusInscripcion.Inscrito;
         this.asistio = false;
     }
 
@@ -87,10 +88,11 @@ public class RealizaActividad {
     public LocalDate getFechaParticipacion() { return fechaParticipacion; }
     public void setFechaParticipacion(LocalDate fechaParticipacion) { this.fechaParticipacion = fechaParticipacion; }
 
-    public String getEstatus() { return estatus; }
-    public void setEstatus(String estatus) { this.estatus = estatus; }
+    public EstatusInscripcion getEstatus() { return estatus; }
+    public void setEstatus(EstatusInscripcion estatus) { this.estatus = estatus; }
+    public void setEstatus(String estatus) { this.estatus = EstatusInscripcion.fromString(estatus); }
 
-    public Boolean getAsistio() { return asistio; }
+    public Boolean getAsistio() { return asistio != null && asistio; }
     public void setAsistio(Boolean asistio) { this.asistio = asistio; }
 
     public Integer getCalificacion() { return calificacion; }
@@ -108,39 +110,12 @@ public class RealizaActividad {
     public Cliente getCliente() { return cliente; }
     public void setCliente(Cliente cliente) { this.cliente = cliente; }
 
-    public Actividad getActividad() { return actividad; }
-    public void setActividad(Actividad actividad) { this.actividad = actividad; }
-
-    // Métodos de negocio
     public void cancelarInscripcion(String motivo) {
-        this.estatus = "Cancelado";
+        this.estatus = EstatusInscripcion.Cancelado;
         this.fechaCancelacion = LocalDateTime.now();
         this.motivoCancelacion = motivo;
     }
 
-    public void marcarComoCompletado(Boolean asistio, Integer calificacion, String comentarios) {
-        this.estatus = "Completado";
-        this.asistio = asistio;
-        this.calificacion = calificacion;
-        this.comentarios = comentarios;
-    }
-
-    public void marcarComoNoShow() {
-        this.estatus = "NoShow";
-        this.asistio = false;
-    }
-
-    @Override
-    public String toString() {
-        return "RealizaActividad{" +
-                "idRegistro=" + idRegistro +
-                ", folioCliente='" + folioCliente + '\'' +
-                ", idActividad='" + idActividad + '\'' +
-                ", fechaInscripcion=" + fechaInscripcion +
-                ", fechaParticipacion=" + fechaParticipacion +
-                ", estatus='" + estatus + '\'' +
-                ", asistio=" + asistio +
-                ", calificacion=" + calificacion +
-                '}';
-    }
+    public Actividad getActividad() { return actividad; }
+    public void setActividad(Actividad actividad) { this.actividad = actividad; }
 }

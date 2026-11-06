@@ -1,5 +1,6 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusPersona;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -37,14 +38,14 @@ public class Instructor {
     private LocalDate fechaContratacion;
 
     @Column(name = "Estatus", length = 10)
-    private String estatus = "Activo";
+    private EstatusPersona estatus = EstatusPersona.Activo;
 
     // Constructores
     public Instructor() {}
 
     public Instructor(String folioInstructor, String nombre, String app, String apm, String email,
                       LocalTime horaEntrada, LocalTime horaSalida, String especialidad,
-                      LocalDate fechaContratacion, String estatus) {
+                      LocalDate fechaContratacion, EstatusPersona estatus) {
         this.folioInstructor = folioInstructor;
         this.nombre = nombre;
         this.app = app;
@@ -54,108 +55,46 @@ public class Instructor {
         this.horaSalida = horaSalida;
         this.especialidad = especialidad;
         this.fechaContratacion = fechaContratacion;
-        this.estatus = estatus;
+        this.estatus = estatus != null ? estatus : EstatusPersona.Activo;
     }
 
-    // Getters y Setters con validación para email
-    public String getFolioInstructor() {
-        return folioInstructor;
-    }
+    // Getters y Setters
+    public String getFolioInstructor() { return folioInstructor; }
+    public void setFolioInstructor(String folioInstructor) { this.folioInstructor = folioInstructor; }
 
-    public void setFolioInstructor(String folioInstructor) {
-        this.folioInstructor = folioInstructor;
-    }
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
 
-    public String getNombre() {
-        return nombre;
-    }
+    public String getApp() { return app; }
+    public void setApp(String app) { this.app = app; }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
+    public String getApm() { return apm; }
+    public void setApm(String apm) { this.apm = apm; }
 
-    public String getApp() {
-        return app;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setApp(String app) {
-        this.app = app;
-    }
+    public LocalTime getHoraEntrada() { return horaEntrada; }
+    public void setHoraEntrada(LocalTime horaEntrada) { this.horaEntrada = horaEntrada; }
 
-    public String getApm() {
-        return apm;
-    }
+    public LocalTime getHoraSalida() { return horaSalida; }
+    public void setHoraSalida(LocalTime horaSalida) { this.horaSalida = horaSalida; }
 
-    public void setApm(String apm) {
-        this.apm = apm;
-    }
+    public String getEspecialidad() { return especialidad; }
+    public void setEspecialidad(String especialidad) { this.especialidad = especialidad; }
 
-    public String getEmail() {
-        return email;
-    }
+    public LocalDate getFechaContratacion() { return fechaContratacion; }
+    public void setFechaContratacion(LocalDate fechaContratacion) { this.fechaContratacion = fechaContratacion; }
 
-    public void setEmail(String email) {
-        // Validar que no sea string "null" o vacío
-        if (email != null && (email.trim().equalsIgnoreCase("null") || email.trim().isEmpty())) {
-            this.email = null;
-        } else {
-            this.email = email;
-        }
-    }
+    public EstatusPersona getEstatus() { return estatus; }
+    public void setEstatus(EstatusPersona estatus) { this.estatus = estatus; }
+    public void setEstatus(String estatus) { this.estatus = EstatusPersona.fromString(estatus); }
 
-    public LocalTime getHoraEntrada() {
-        return horaEntrada;
-    }
-
-    public void setHoraEntrada(LocalTime horaEntrada) {
-        this.horaEntrada = horaEntrada;
-    }
-
-    public LocalTime getHoraSalida() {
-        return horaSalida;
-    }
-
-    public void setHoraSalida(LocalTime horaSalida) {
-        this.horaSalida = horaSalida;
-    }
-
-    public String getEspecialidad() {
-        return especialidad;
-    }
-
-    public void setEspecialidad(String especialidad) {
-        this.especialidad = especialidad;
-    }
-
-    public LocalDate getFechaContratacion() {
-        return fechaContratacion;
-    }
-
-    public void setFechaContratacion(LocalDate fechaContratacion) {
-        this.fechaContratacion = fechaContratacion;
-    }
-
-    public String getEstatus() {
-        return estatus;
-    }
-
-    public void setEstatus(String estatus) {
-        this.estatus = estatus;
-    }
-
-    @Override
-    public String toString() {
-        return "Instructor{" +
-                "folioInstructor='" + folioInstructor + '\'' +
-                ", nombre='" + nombre + '\'' +
-                ", app='" + app + '\'' +
-                ", apm='" + apm + '\'' +
-                ", email=" + email + // Cambiado para mostrar null correctamente
-                ", horaEntrada=" + horaEntrada +
-                ", horaSalida=" + horaSalida +
-                ", especialidad='" + especialidad + '\'' +
-                ", fechaContratacion=" + fechaContratacion +
-                ", estatus='" + estatus + '\'' +
-                '}';
+    public String getNombreCompleto() {
+        StringBuilder sb = new StringBuilder();
+        if (nombre != null) sb.append(nombre);
+        if (app != null) sb.append(" ").append(app);
+        if (apm != null) sb.append(" ").append(apm);
+        return sb.toString().trim();
     }
 }

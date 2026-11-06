@@ -1,8 +1,9 @@
 package com.example.harmonyGymBack.rest;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.harmonyGymBack.model.Administrador;
 import com.example.harmonyGymBack.service.AdministradorServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,12 +14,17 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@PreAuthorize("hasRole('ADMINISTRADOR')")
 @RequestMapping("/api/administradores")
 @CrossOrigin(origins = "*")
 public class AdministradorController {
 
-    @Autowired
-    private AdministradorServiceImpl administradorService;
+    private final AdministradorServiceImpl administradorService;
+
+    public AdministradorController(AdministradorServiceImpl administradorService) {
+        this.administradorService = administradorService;
+    }
+
 
     // ==================== CREAR ADMINISTRADOR ====================
 

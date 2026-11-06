@@ -1,6 +1,7 @@
 package com.example.harmonyGymBack.rest;
 
 import com.example.harmonyGymBack.model.Actividad;
+import com.example.harmonyGymBack.model.enums.EstatusCatalogo;
 import com.example.harmonyGymBack.service.ActividadServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/actividades")
@@ -18,7 +21,14 @@ import java.util.Map;
 public class ActividadController {
 
     @Autowired
-    private ActividadServiceImpl actividadService;
+    private com.example.harmonyGymBack.service.ClienteActividadService clienteActividadService;
+
+    private final ActividadServiceImpl actividadService;
+
+    public ActividadController(ActividadServiceImpl actividadService) {
+        this.actividadService = actividadService;
+    }
+
 
     // GUARDAR - Crear nueva actividad
     @PostMapping("/guardar")
@@ -111,7 +121,7 @@ public class ActividadController {
             @PathVariable String id,
             @RequestParam String estatus) {
         try {
-            Actividad actividad = actividadService.cambiarEstatusActividad(id, estatus);
+            Actividad actividad = actividadService.cambiarEstatusActividad(id, EstatusCatalogo.fromString(estatus));
             return new ResponseEntity<>(Map.of(
                     "message", "Estatus de actividad actualizado exitosamente",
                     "data", actividad
@@ -136,6 +146,39 @@ public class ActividadController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
             return new ResponseEntity<>("Error interno del servidor", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    
+    // REGISTRAR ASISTENCIA (INSTRUCTOR)
+    @PutMapping("/{id}/asistencia")
+    public ResponseEntity<?> registrarAsistencia(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            String folioInstructor = (String) payload.get("folioInstructor");
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> asistencias = (List<Map<String, Object>>) payload.get("asistencias");
+            if (asistencias == null) asistencias = Collections.emptyList();
+
+            var resultado = clienteActividadService.registrarAsistencia(id, folioInstructor, asistencias);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Asistencia registrada exitosamente");
+            response.put("data", resultado);
+
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Error interno al registrar asistencia: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 

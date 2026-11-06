@@ -3,7 +3,6 @@ package com.example.harmonyGymBack.rest;
 import com.example.harmonyGymBack.model.Actividad;
 import com.example.harmonyGymBack.model.RealizaActividad;
 import com.example.harmonyGymBack.service.ClienteActividadService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +16,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class ClienteActividadController {
 
-    @Autowired
-    private ClienteActividadService clienteActividadService;
+    private final ClienteActividadService clienteActividadService;
+
+    public ClienteActividadController(ClienteActividadService clienteActividadService) {
+        this.clienteActividadService = clienteActividadService;
+    }
+
 
     // ==================== INSCRIPCIÓN ====================
 
@@ -231,19 +234,8 @@ public class ClienteActividadController {
             @RequestParam Integer calificacion,
             @RequestParam(required = false) String comentario) {
         try {
-            // Buscar la inscripción
-            List<RealizaActividad> inscripciones = clienteActividadService
-                    .obtenerHistorialActividades(folioCliente);
-
-            RealizaActividad inscripcion = inscripciones.stream()
-                    .filter(ra -> ra.getIdActividad().equals(idActividad))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("No tienes una inscripción para esta actividad"));
-
-            // Actualizar calificación
-            inscripcion.setCalificacion(calificacion);
-            inscripcion.setComentarios(comentario);
-            // Aquí deberías tener un servicio para guardar la actualización
+            RealizaActividad inscripcion = clienteActividadService
+                    .calificarActividad(folioCliente, idActividad, calificacion, comentario);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -251,7 +243,6 @@ public class ClienteActividadController {
             response.put("data", inscripcion);
 
             return ResponseEntity.ok(response);
-
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);

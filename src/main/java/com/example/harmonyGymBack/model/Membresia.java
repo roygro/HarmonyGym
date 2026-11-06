@@ -1,5 +1,6 @@
 package com.example.harmonyGymBack.model;
 
+import com.example.harmonyGymBack.model.enums.EstatusCatalogo;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -27,7 +28,7 @@ public class Membresia {
     private String beneficios;
 
     @Column(name = "estatus", nullable = false)
-    private String estatus; // ACTIVO, INACTIVO, etc.
+    private EstatusCatalogo estatus;
 
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
@@ -35,7 +36,7 @@ public class Membresia {
     // Constructores
     public Membresia() {
         this.fechaCreacion = LocalDateTime.now();
-        this.estatus = "ACTIVO";
+        this.estatus = EstatusCatalogo.Activa;
     }
 
     public Membresia(TipoMembresia tipo, Double precio, Integer duracion,
@@ -48,9 +49,12 @@ public class Membresia {
         this.beneficios = beneficios;
     }
 
-    // ✅ NUEVO MÉTODO: Para compatibilidad con el patrón Bridge
-    public Double getPrecioBase() {
-        return this.precio != null ? this.precio : 0.0;
+    public Membresia(String idMembresia, TipoMembresia tipo, Double precio,
+                     Integer duracion, String descripcion, String beneficios,
+                     EstatusCatalogo estatus) {
+        this(tipo, precio, duracion, descripcion, beneficios);
+        this.idMembresia = idMembresia;
+        this.estatus = estatus != null ? estatus : EstatusCatalogo.Activa;
     }
 
     // Getters y Setters
@@ -102,12 +106,16 @@ public class Membresia {
         this.beneficios = beneficios;
     }
 
-    public String getEstatus() {
+    public EstatusCatalogo getEstatus() {
         return estatus;
     }
 
-    public void setEstatus(String estatus) {
+    public void setEstatus(EstatusCatalogo estatus) {
         this.estatus = estatus;
+    }
+
+    public void setEstatus(String estatus) {
+        this.estatus = EstatusCatalogo.fromString(estatus);
     }
 
     public LocalDateTime getFechaCreacion() {
@@ -118,12 +126,10 @@ public class Membresia {
         this.fechaCreacion = fechaCreacion;
     }
 
-    // ✅ OPCIONAL: Método para verificar si está activa
     public boolean isActiva() {
-        return "ACTIVO".equalsIgnoreCase(this.estatus);
+        return EstatusCatalogo.Activa.equals(this.estatus);
     }
 
-    // ✅ OPCIONAL: Método toString para debugging
     @Override
     public String toString() {
         return "Membresia{" +
@@ -131,7 +137,10 @@ public class Membresia {
                 ", tipo=" + tipo +
                 ", precio=" + precio +
                 ", duracion=" + duracion +
-                ", estatus='" + estatus + '\'' +
+                ", descripcion='" + descripcion + '\'' +
+                ", beneficios='" + beneficios + '\'' +
+                ", estatus=" + estatus +
+                ", fechaCreacion=" + fechaCreacion +
                 '}';
     }
 }
