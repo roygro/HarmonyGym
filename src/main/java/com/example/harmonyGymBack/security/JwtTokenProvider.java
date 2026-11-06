@@ -18,12 +18,13 @@ public class JwtTokenProvider {
 
     private static final Logger log = LoggerFactory.getLogger(JwtTokenProvider.class);
 
-    // Expiración por defecto: 8 horas (en milisegundos)
-    private static final long EXPIRACION_MS = 8 * 60 * 60 * 1000L;
-
+    private final long expiracionMs;
     private final SecretKey key;
 
-    public JwtTokenProvider(@Value("${jwt.secret:HarmonyGymSecretKey2026SuperSecureAndLongEnoughForHmacSha256Signature!}") String secret) {
+    public JwtTokenProvider(
+            @Value("${jwt.secret:${JWT_SECRET:HarmonyGymSecretKey2026SuperSecureAndLongEnoughForHmacSha256Signature!}}") String secret,
+            @Value("${jwt.expiracion-horas:${JWT_EXPIRACION_HORAS:8}}") int horasExpiracion) {
+        this.expiracionMs = (long) horasExpiracion * 60 * 60 * 1000L;
         // Asegurar clave de al menos 256 bits (32 bytes)
         byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
         if (secretBytes.length < 32) {
@@ -37,7 +38,7 @@ public class JwtTokenProvider {
 
     public String generarToken(String username, String idUsuario, String tipoUsuario, String rol, String idPersona) {
         Date ahora = new Date();
-        Date expiracion = new Date(ahora.getTime() + EXPIRACION_MS);
+        Date expiracion = new Date(ahora.getTime() + expiracionMs);
 
         return Jwts.builder()
                 .subject(username)
